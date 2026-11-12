@@ -170,9 +170,9 @@ spec:
 | `http.Get("https://certs.api/rootCA").cert == object.spec.cert`                                                  | 객체의 인증서 필드를 외부 데이터와 비교해 검증한다       |
 | `http.Client(variables.caBundle).Get("https://internal.svc/data").status == "ok"`                                | 사용자 정의 CA 번들로 TLS 신뢰를 구성해 HTTPS 엔드포인트를 호출한다 |
 
-다음 정책은 외부 또는 내부 HTTP(S) 엔드포인트에서 데이터를 가져와 정책 안에서 쓸 수 있게 한다.
+다음 정책은 외부 또는 내부 HTTP(S) <span class="hl-link" tabindex="0" data-code="http-get.yaml" data-lines="14-17">엔드포인트에서 데이터를 가져와</span> <span class="hl-link" tabindex="0" data-code="http-get.yaml" data-lines="18-21">정책 안에서 쓸 수 있게 한다</span>.
 
-```yaml
+```yaml title="http-get.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -196,9 +196,9 @@ spec:
       messageExpression: "'only create pod with labels, variables.get.metadata.labels.app: ' + string(variables.get.metadata.labels.app)"
 ```
 
-다음 예시는 페이로드를 담은 `POST` 요청을 외부 서비스에 보낸다.
+다음 예시는 <span class="hl-link" tabindex="0" data-code="http-post.yaml" data-lines="14-19">페이로드를 담은 `POST` 요청을 외부 서비스에 보낸다</span>.
 
-```yaml
+```yaml title="http-post.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -358,9 +358,9 @@ spec:
 | `object.spec.containers.map(c, image(c.image)).map(i, i.registry()).all(r, r == "ghcr.io")` | 모든 컨테이너 이미지가 `ghcr.io` 레지스트리에서 온 것인지 확인한다       |
 | `object.spec.containers.map(c, image(c.image)).all(i, i.containsDigest())`                  | 모든 이미지가 다이제스트를 포함하는지 확인한다                           |
 
-다음 예시는 모든 이미지가 다이제스트를 사용하도록 강제한다.
+다음 예시는 <span class="hl-link" tabindex="0" data-code="check-images-digest.yaml" data-lines="12-17">모든 이미지가 다이제스트를</span> <span class="hl-link" tabindex="0" data-code="check-images-digest.yaml" data-lines="18-22">사용하도록 강제한다</span>.
 
-```yaml
+```yaml title="check-images-digest.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -509,9 +509,9 @@ spec:
 | `hash.sha1("somestring")`   | 임의의 문자열 값의 sha1 해시를 구한다       |
 | `hash.sha256("somestring")` | 임의의 문자열 값의 sha256 해시를 구한다     |
 
-다음 정책은 특정 디플로이먼트의 이미지 이름 해시가 `nginx:latest`를 나타내는 필수 값과 일치하는지 확인한다.
+다음 정책은 특정 디플로이먼트의 <span class="hl-link" tabindex="0" data-code="check-hash.yaml" data-lines="16-18">이미지 이름 해시가</span> <span class="hl-link" tabindex="0" data-code="check-hash.yaml" data-lines="13-15">`nginx:latest`를 나타내는 필수 값과</span> <span class="hl-link" tabindex="0" data-code="check-hash.yaml" data-lines="19-26">일치하는지 확인한다</span>.
 
-```yaml
+```yaml title="check-hash.yaml"
 apiVersion: policies.kyverno.io/v1beta1
 kind: ValidatingPolicy
 metadata:
@@ -552,9 +552,9 @@ spec:
 | `math.round(10.125, 0)`      | 가장 가까운 정수로 반올림한다(`10.0` 반환) |
 | `math.round(12345.6789, -2)` | 백의 자리로 반올림한다(`12300.0` 반환)     |
 
-다음 예시 정책은 CPU 요청이 적절한 정밀도로 반올림되어 있고 8코어를 넘지 않는지 검증한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="validate-cpu-precision.yaml" data-lines="18-23">CPU 요청이</span> <span class="hl-link" tabindex="0" data-code="validate-cpu-precision.yaml" data-lines="25-30">적절한 정밀도로 반올림되어 있고</span> <span class="hl-link" tabindex="0" data-code="validate-cpu-precision.yaml" data-lines="32-36">8코어를 넘지 않는지 검증한다</span>.
 
-```yaml
+```yaml title="validate-cpu-precision.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -607,9 +607,9 @@ spec:
 | `random("[a-f0-9]{32}")`                        | 32자 16진수 문자열을 만든다                                  |
 | `random("[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}")` | UUID와 비슷한 패턴을 만든다                                  |
 
-다음 변경 정책 예시는 디플로이먼트에 고유한 추적 ID를 추가한다.
+다음 변경 정책 예시는 디플로이먼트에 <span class="hl-link" tabindex="0" data-code="add-tracking-id.yaml" data-lines="15-22">고유한 추적 ID를 추가한다</span>.
 
-```yaml
+```yaml title="add-tracking-id.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -646,9 +646,9 @@ spec:
 | `transform.listObjToMap([{"id": "x"}, {"id": "y"}], [{"val": 1}, {"val": 2}], "id", "val")`                                                   | 맵 `{"x": 1, "y": 2}`를 만든다      |
 | `transform.listObjToMap(object.spec.containers.map(c, {"name": c.name}), object.spec.containers.map(c, {"image": c.image}), "name", "image")` | 컨테이너 이름을 이미지에 매핑한다   |
 
-다음 예시 정책은 컨테이너 환경 변수가 기대한 값과 일치하는지 검증한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="require-key.yaml" data-lines="16-23">컨테이너 환경 변수가</span> <span class="hl-link" tabindex="0" data-code="require-key.yaml" data-lines="24-28">기대한 값과 일치하는지 검증한다</span>.
 
-```yaml
+```yaml title="require-key.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -718,9 +718,9 @@ Error from server: error when creating "STDIN": admission webhook "vpol.validate
 | `json.marshal([1, 2, 3])`                               | 리스트를 JSON 문자열로 직렬화한다 |
 | `json.marshal(true)`                                    | 불리언을 JSON 문자열로 직렬화한다 |
 
-다음 예시 정책은 어노테이션에 JSON으로 저장된 설정을 검증한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="require-security-approval.yaml" data-lines="15-18">어노테이션에 JSON으로 저장된 설정을</span> <span class="hl-link" tabindex="0" data-code="require-security-approval.yaml" data-lines="19-23">검증한다</span>.
 
-```yaml
+```yaml title="require-security-approval.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -798,9 +798,9 @@ Error from server: error when creating "STDIN": admission webhook "vpol.validate
 | `yaml.parse(object.data['config.yaml'])` | 컨피그맵 데이터의 YAML을 파싱한다 |
 | `yaml.parse('count: 42').count`          | 파싱한 뒤 중첩 필드에 접근한다    |
 
-다음 예시 정책은 디플로이먼트 어노테이션의 YAML 값을 검증한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="check-goodboi.yaml" data-lines="15-18">디플로이먼트 어노테이션의 YAML 값을</span> <span class="hl-link" tabindex="0" data-code="check-goodboi.yaml" data-lines="19-23">검증한다</span>.
 
-```yaml
+```yaml title="check-goodboi.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -904,9 +904,9 @@ spec:
   schedule: '*/10 * * * *'
 ```
 
-다음 삭제 정책은 생성 타임스탬프를 가장 가까운 시 단위로 잘랐을 때 24시간이 지난 정책 예외를 삭제한다.
+다음 삭제 정책은 <span class="hl-link" tabindex="0" data-code="delete-exceptions-trunacted.yaml" data-lines="6-8">생성 타임스탬프를 가장 가까운 시 단위로 잘랐을 때 24시간이 지난</span> <span class="hl-link" tabindex="0" data-code="delete-exceptions-trunacted.yaml" data-lines="9-16">정책 예외를</span> 삭제한다.
 
-```yaml
+```yaml title="delete-exceptions-trunacted.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: DeletingPolicy
 metadata:
@@ -943,9 +943,9 @@ spec:
 | `x509.decode(cert).BasicConstraintsValid` | 기본 제약(basic constraints) 확장이 유효한지 확인한다 |
 | `x509.decode(cert).PublicKey.E`           | RSA 공개 키 지수를 가져온다                         |
 
-다음 예시 정책은 웹훅 인증서의 만료일이 일주일 넘게 남아 있는지 검증한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="test-x509-decode.yaml" data-lines="9-16">웹훅 인증서의</span> <span class="hl-link" tabindex="0" data-code="test-x509-decode.yaml" data-lines="17-21">만료일이 일주일 넘게 남아 있는지 검증한다</span>.
 
-```yaml
+```yaml title="test-x509-decode.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
