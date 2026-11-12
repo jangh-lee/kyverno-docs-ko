@@ -4,11 +4,11 @@ weight: 35
 ---
 ## kyverno migrate
 
-하나 이상의 리소스를 저장 버전(stored version)으로 마이그레이션합니다.
+하나 이상의 리소스를 저장 버전(stored version)으로 마이그레이션한다.
 
 ### 개요
 
-하나 이상의 리소스를 저장 버전(stored version)으로 마이그레이션합니다.
+하나 이상의 리소스를 저장 버전(stored version)으로 마이그레이션한다.
 
 
 ```
@@ -53,5 +53,5 @@ kyverno migrate [flags]
 
 ### 함께 보기
 
-* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구입니다.
+* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구이다.
 

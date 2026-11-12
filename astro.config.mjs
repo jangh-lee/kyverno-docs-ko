@@ -41,7 +41,11 @@ export default defineConfig({
       locales: { root: { label: '한국어', lang: 'ko' } },
       favicon: '/favicon.svg',
       customCss: ['./src/styles/custom.css'],
-      head: [{ tag: 'script', attrs: { src: `${base}/sidebar-toggle.js` } }],
+      components: { PageTitle: './src/components/PageTitle.astro' },
+      head: [
+        { tag: 'script', attrs: { src: `${base}/sidebar-toggle.js` } },
+        { tag: 'script', attrs: { src: `${base}/code-highlight.js`, defer: true } },
+      ],
       editLink: { baseUrl: 'https://github.com/kyverno/website/edit/main/' },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/kyverno/kyverno' },

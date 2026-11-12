@@ -4,13 +4,13 @@ weight: 35
 ---
 ## kyverno oci inspect
 
-푸시된 번들의 리졸브된 다이제스트, 리소스 인덱스, 세트, 소스 및 리비전 메타데이터, 매니페스트 어노테이션, Kyverno 호환성을 보여 줍니다.
+푸시된 번들의 리졸브된 다이제스트, 리소스 인덱스, 세트, 소스 및 리비전 메타데이터, 매니페스트 어노테이션, Kyverno 호환성을 보여 준다.
 
 ### 개요
 
-푸시된 번들의 리졸브된 다이제스트, 리소스 인덱스, 세트, 소스 및 리비전 메타데이터, 매니페스트 어노테이션, Kyverno 호환성을 보여 줍니다.
-  이 명령은 매니페스트와 config blob만 읽으며, 콘텐츠 레이어는 다운로드하거나 검증하지 않습니다. 아카이브 전체를 다시 검증하려면 "kyverno oci validate -i"를 사용하세요.
-  --output json 또는 yaml을 지정하면 같은 정보를 스크립트에서 쓰기 좋은 안정적인 형식으로 출력합니다. config 섹션은 config blob의 내용을 그대로 재현하지만, JSON 출력에서는 들여쓰기가 다시 적용됩니다.
+푸시된 번들의 리졸브된 다이제스트, 리소스 인덱스, 세트, 소스 및 리비전 메타데이터, 매니페스트 어노테이션, Kyverno 호환성을 보여 준다.
+  이 명령은 매니페스트와 config blob만 읽으며, 콘텐츠 레이어는 다운로드하거나 검증하지 않는다. 아카이브 전체를 다시 검증하려면 "kyverno oci validate -i"를 사용한다.
+  --output json 또는 yaml을 지정하면 같은 정보를 스크립트에서 쓰기 좋은 안정적인 형식으로 출력한다. config 섹션은 config blob의 내용을 그대로 재현하지만, JSON 출력에서는 들여쓰기가 다시 적용된다.
 
 
 ```
@@ -45,7 +45,7 @@ kyverno oci inspect [flags]
       --add_dir_header                      If true, adds the file directory to the header of the log messages
       --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
       --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요합니다.
+      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요하다.
       --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
@@ -62,5 +62,5 @@ kyverno oci inspect [flags]
 
 ### 함께 보기
 
-* [kyverno oci](/docs/kyverno-cli/reference/kyverno_oci)	 - OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브합니다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고하세요.
+* [kyverno oci](/docs/kyverno-cli/reference/kyverno_oci)	 - OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브한다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고한다.
 

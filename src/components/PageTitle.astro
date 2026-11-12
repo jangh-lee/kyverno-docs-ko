@@ -1,0 +1,52 @@
+---
+import Default from '@astrojs/starlight/components/PageTitle.astro'
+import { TRANSLATED_AT, UPSTREAM_COMMIT, UPSTREAM_VERSION } from '../constants'
+
+const { entry } = Astro.locals.starlightRoute
+const id = entry.id
+const isDoc = id === 'docs' || id.startsWith('docs/')
+const path = id.replace(/\/index$/, '').replace(/\/$/, '')
+const original = `https://kyverno.io/${path}/`
+const source = entry.filePath
+  ? `https://github.com/kyverno/website/blob/${UPSTREAM_COMMIT}/${entry.filePath}`
+  : undefined
+---
+
+<Default />
+{
+  isDoc && (
+    <aside class="tr-notice" aria-label="번역 안내">
+      <p class="tr-note">
+        <strong>번역 안내</strong> 이 문서는 영문 원문을 번역한 것이다. 번역과 원문의 내용이 다르면{' '}
+        <strong>원문이 우선</strong>한다.
+      </p>
+      <p class="tr-meta">
+        번역기준일 {TRANSLATED_AT} · 원문 Kyverno {UPSTREAM_VERSION} ·{' '}
+        <a href={original} target="_blank" rel="noopener">원문 보기</a>
+        {source && (
+          <>
+            {' · '}
+            <a href={source} target="_blank" rel="noopener">원문 소스</a>
+          </>
+        )}
+      </p>
+    </aside>
+  )
+}
+
+<style>
+  .tr-notice {
+    margin: 0.75rem 0 1.25rem;
+    padding: 0.55rem 0.9rem;
+    border-inline-start: 3px solid var(--sl-color-accent);
+    background: var(--sl-color-accent-low);
+    border-radius: 0.25rem;
+    font-size: var(--sl-text-sm);
+    line-height: 1.5;
+  }
+  .tr-notice p { margin: 0; }
+  .tr-note { color: var(--sl-color-text); }
+  .tr-meta { margin-top: 0.25rem !important; font-size: var(--sl-text-xs); color: var(--sl-color-gray-2); }
+  .tr-meta a { color: var(--sl-color-gray-2); text-decoration: underline; }
+  .tr-meta a:hover { color: var(--sl-color-white); }
+</style>

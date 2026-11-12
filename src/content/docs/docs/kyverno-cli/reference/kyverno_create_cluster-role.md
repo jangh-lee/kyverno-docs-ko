@@ -4,13 +4,13 @@ weight: 35
 ---
 ## kyverno create cluster-role
 
-지정한 리소스 종류에 대한 집계 롤(aggregated role)을 생성합니다.
+지정한 리소스 종류에 대한 집계 롤(aggregated role)을 생성한다.
 
 ### 개요
 
-이 명령은 지정한 리소스 종류에 대한 Kubernetes ClusterRole을 생성합니다.
-출력은 기본적으로 stdout에 출력되며, 지정한 파일에 저장할 수도 있습니다.
-'api-groups', 'verbs', 'resources' 플래그는 필수입니다.
+이 명령은 지정한 리소스 종류에 대한 쿠버네티스 클러스터롤(ClusterRole)을 생성한다.
+출력은 기본적으로 stdout에 출력되며, 지정한 파일에 저장할 수도 있다.
+'api-groups', 'verbs', 'resources' 플래그는 필수이다.
 
 ```
 kyverno create cluster-role [name]  [flags]
@@ -33,7 +33,7 @@ kyverno create cluster-role [name]  [flags]
       --add_dir_header                      If true, adds the file directory to the header of the log messages
       --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
       --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요합니다.
+      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요하다.
       --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
@@ -50,5 +50,5 @@ kyverno create cluster-role [name]  [flags]
 
 ### 함께 보기
 
-* [kyverno create](/docs/kyverno-cli/reference/kyverno_create)	 - 다양한 Kyverno 리소스 생성을 돕습니다.
+* [kyverno create](/docs/kyverno-cli/reference/kyverno_create)	 - 다양한 Kyverno 리소스 생성을 돕는다.
 

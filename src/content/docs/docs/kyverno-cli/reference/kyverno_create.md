@@ -4,16 +4,16 @@ weight: 35
 ---
 ## kyverno create
 
-다양한 Kyverno 리소스 생성을 돕습니다.
+다양한 Kyverno 리소스 생성을 돕는다.
 
 ### 개요
 
-다양한 Kyverno 리소스 생성을 돕습니다.
+다양한 Kyverno 리소스 생성을 돕는다.
 
   참고: 레거시 kyverno.io/v2 PolicyException의 틀을 만들어 주던 "kyverno create exception"은
-  1.20에서 레거시 정책 실행과 함께 제거됐으며, 이를 대체하는 명령은 없습니다.
+  1.20에서 레거시 정책 실행과 함께 제거됐으며, 이를 대체하는 명령은 없다.
   CEL PolicyException의 형태는 policies.kyverno.io PolicyException 문서
-  (https://kyverno.io/docs/guides/exceptions/)를 참고하세요.
+  (https://kyverno.io/docs/guides/exceptions/)를 참고한다.
 
 
 ```
@@ -48,7 +48,7 @@ kyverno create [flags]
       --add_dir_header                      If true, adds the file directory to the header of the log messages
       --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
       --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요합니다.
+      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요하다.
       --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
@@ -65,10 +65,10 @@ kyverno create [flags]
 
 ### 함께 보기
 
-* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구입니다.
-* [kyverno create cluster-role](/docs/kyverno-cli/reference/kyverno_create_cluster-role)	 - 지정한 리소스 종류에 대한 집계 롤(aggregated role)을 생성합니다.
-* [kyverno create metrics-config](/docs/kyverno-cli/reference/kyverno_create_metrics-config)	 - Kyverno metrics-config 파일을 생성합니다.
-* [kyverno create test](/docs/kyverno-cli/reference/kyverno_create_test)	 - Kyverno 테스트 파일을 생성합니다.
-* [kyverno create user-info](/docs/kyverno-cli/reference/kyverno_create_user-info)	 - Kyverno user-info 파일을 생성합니다.
-* [kyverno create values](/docs/kyverno-cli/reference/kyverno_create_values)	 - Kyverno values 파일을 생성합니다.
+* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구이다.
+* [kyverno create cluster-role](/docs/kyverno-cli/reference/kyverno_create_cluster-role)	 - 지정한 리소스 종류에 대한 집계 롤(aggregated role)을 생성한다.
+* [kyverno create metrics-config](/docs/kyverno-cli/reference/kyverno_create_metrics-config)	 - Kyverno metrics-config 파일을 생성한다.
+* [kyverno create test](/docs/kyverno-cli/reference/kyverno_create_test)	 - Kyverno 테스트 파일을 생성한다.
+* [kyverno create user-info](/docs/kyverno-cli/reference/kyverno_create_user-info)	 - Kyverno user-info 파일을 생성한다.
+* [kyverno create values](/docs/kyverno-cli/reference/kyverno_create_values)	 - Kyverno values 파일을 생성한다.
 

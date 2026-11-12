@@ -1,7 +1,7 @@
 ---
 title: DeletingPolicy
 excerpt: >-
-  일정에 따라 조건에 맞는 리소스를 삭제합니다
+  일정에 따라 조건에 맞는 리소스를 삭제한다
 sidebar:
   order: 5
 ---
@@ -13,49 +13,49 @@ import { lastestStableVersion } from '../../../../constants'
 
 ## 소개
 
-`DeletingPolicy`는 클러스터 관리자가 지정한 조건에 맞는 Kubernetes 리소스를 cron 일정에 따라 자동으로 삭제하는 Kyverno 커스텀 리소스입니다. 수명 주기 관리, 가비지 컬렉션, 보존 기간 정책을 시행할 때 유용합니다.
+`DeletingPolicy`는 클러스터 관리자가 지정한 조건에 맞는 쿠버네티스 리소스를 cron 일정에 따라 자동으로 삭제하는 Kyverno 사용자 정의 리소스이다. 수명 주기 관리, 가비지 컬렉션, 보존 기간 정책을 시행할 때 유용하다.
 
-삭제 대상은 CEL 표현식으로 고릅니다. 정책 없이 개별 리소스에 만료 시점을 두고 싶다면 [TTL 정리](/docs/guides/ttl-cleanup)를 사용하세요.
+삭제 대상은 CEL 표현식으로 고른다. 정책 없이 개별 리소스에 만료 시점을 두고 싶다면 [TTL 정리](/docs/guides/ttl-cleanup)를 사용한다.
 
-DeletingPolicy는 API 요청에 반응하는 어드미션 정책과 다르게 동작합니다.
+DeletingPolicy는 API 요청에 반응하는 어드미션 정책과 다르게 동작한다.
 
-- 정해진 시간마다 주기적으로 실행됩니다.
+- 정해진 시간마다 주기적으로 실행된다.
 
-- 클러스터에 이미 있는 리소스를 평가합니다.
+- 클러스터에 이미 있는 리소스를 평가한다.
 
-- 매칭 규칙과 조건을 모두 만족하는 리소스를 삭제합니다.
+- 매칭 규칙과 조건을 모두 만족하는 리소스를 삭제한다.
 
 ## 주요 사용 사례
 
-- 완료된 잡처럼 방치된 리소스를 주기적으로 찾아 삭제합니다.
+- 완료된 잡(Job)처럼 방치된 리소스를 주기적으로 찾아 삭제한다.
 
-- 만료된 시크릿이나 컨피그맵을 제거합니다.
+- 만료된 시크릿(Secret)이나 컨피그맵(ConfigMap)을 제거한다.
 
-- 중요한 리소스에 기한이 있는 임대(lease)를 적용합니다.
+- 중요한 리소스에 기한이 있는 임대(lease)를 적용한다.
 
 ## 필드
 
 ### schedule
 
-정책을 언제 평가할지 정하는 cron 표현식입니다.
+정책을 언제 평가할지 정하는 cron 표현식이다.
 
 ```yaml
 schedule: '0 0 * * *' #everyday at midnight
 ```
 
-- 표준 cron 형식이어야 합니다.
-- 최소 간격은 1분입니다.
+- 표준 cron 형식이어야 한다.
+- 최소 간격은 1분이다.
 
 ### matchPolicy
 
-규칙을 API 요청에 매칭하는 방식을 정합니다.
+규칙을 API 요청에 매칭하는 방식을 정한다.
 
 ```yaml
 matchPolicy: 'Equivalent'
 ```
 
-- **Exact:** 그룹/버전이 정확히 일치해야 매칭합니다.
-- **Equivalent:** 동등한 그룹/버전까지 매칭합니다(권장).
+- **Exact:** 그룹/버전이 정확히 일치해야 매칭한다.
+- **Equivalent:** 동등한 그룹/버전까지 매칭한다(권장).
 
 ### deletionPropagationPolicy
 
@@ -63,20 +63,20 @@ matchPolicy: 'Equivalent'
 deletionPropagationPolicy: 'Orphan'
 ```
 
-리소스를 어떤 방식으로 삭제할지 정합니다(Foreground, Background, Orphan).
+리소스를 어떤 방식으로 삭제할지 정한다(Foreground, Background, Orphan).
 
-- **Orphan**: 종속 리소스를 건드리지 않습니다. 종속 리소스는 고아(orphan) 상태가 되어 삭제되지 않습니다.
-- **Background**: 주 리소스를 먼저 삭제하고, 가비지 컬렉터가 종속 리소스를 백그라운드에서 삭제합니다.
-- **Foreground**: 가비지 컬렉터가 종속 리소스를 모두 삭제할 때까지 주 리소스가 남아 있습니다(연쇄 삭제).
+- **Orphan**: 종속 리소스를 건드리지 않는다. 종속 리소스는 고아(orphan) 상태가 되어 삭제되지 않는다.
+- **Background**: 주 리소스를 먼저 삭제하고, 가비지 컬렉터가 종속 리소스를 백그라운드에서 삭제한다.
+- **Foreground**: 가비지 컬렉터가 종속 리소스를 모두 삭제할 때까지 주 리소스가 남아 있다(연쇄 삭제).
 
 ## 정책 범위
 
-DeletingPolicy에는 클러스터 범위 버전과 네임스페이스 범위 버전이 있습니다.
+DeletingPolicy에는 클러스터 범위 버전과 네임스페이스 범위 버전이 있다.
 
-- **`DeletingPolicy`**: 클러스터 범위입니다. 모든 네임스페이스의 리소스에 적용됩니다.
-- **`NamespacedDeletingPolicy`**: 네임스페이스 범위입니다. 같은 네임스페이스 안의 리소스에만 적용됩니다.
+- **`DeletingPolicy`**: 클러스터 범위이다. 모든 네임스페이스의 리소스에 적용된다.
+- **`NamespacedDeletingPolicy`**: 네임스페이스 범위이다. 같은 네임스페이스 안의 리소스에만 적용된다.
 
-두 정책은 기능과 필드 구조가 같고, 리소스를 선택하는 범위만 다릅니다.
+두 정책은 기능과 필드 구조가 같고, 리소스를 선택하는 범위만 다르다.
 
 ### NamespacedDeletingPolicy 예시
 
@@ -98,19 +98,23 @@ spec:
       expression: "object.status.conditions.exists(c, c.type == 'Complete' && c.status == 'True')"
 ```
 
-`NamespacedDeletingPolicy`를 쓰면 네임스페이스 소유자가 cluster-admin 권한 없이도 삭제 정책을 직접 관리할 수 있습니다. 멀티 테넌시와 보안 격리 면에서 이점이 있습니다.
+`NamespacedDeletingPolicy`를 쓰면 네임스페이스 소유자가 cluster-admin 권한 없이도 삭제 정책을 직접 관리할 수 있다. 멀티 테넌시와 보안 격리 면에서 이점이 있다.
 
 ## 예시
 
-아래 `DeletingPolicy`(cleanup-old-test-pods)는 매일 새벽 1시에 파드를 자동으로 삭제하도록 설정되어 있습니다. 삭제 대상은 다음 조건을 모두 만족하는 파드입니다.
+아래 `DeletingPolicy`(cleanup-old-test-pods)는 <span class="hl-link" tabindex="0" data-code="cleanup-old-test-pods.yaml" data-lines="6">매일 새벽 1시에</span> 파드를 자동으로 삭제하도록 설정되어 있다. 삭제 대상은 다음 조건을 모두 만족하는 파드이다.
 
-- `environment: test` 레이블이 붙은 네임스페이스에 있습니다.
+- <span class="hl-link" tabindex="0" data-code="cleanup-old-test-pods.yaml" data-lines="14-16">`environment: test` 레이블이 붙은 네임스페이스에</span> 있다.
 
-- `old: "true"` 레이블이 붙어 있습니다.
+- <span class="hl-link" tabindex="0" data-code="cleanup-old-test-pods.yaml" data-lines="17-19">`old: "true"` 레이블이 붙어</span> 있다.
 
-정책은 cron 일정에 따라 주기적으로 실행되고, CEL 표현식 조건으로 표시된 파드만 정리합니다. 변수(isEphemeral)도 하나 정의해 두었는데, 임시(ephemeral) 파드만 삭제하는 식으로 삭제 로직을 더 세밀하게 다듬을 때 쓸 수 있습니다.
+정책은 cron 일정에 따라 주기적으로 실행되고, CEL 표현식 조건으로 표시된 파드만 정리한다. <span class="hl-link" tabindex="0" data-code="cleanup-old-test-pods.yaml" data-lines="20-22">변수(isEphemeral)도 하나 정의해 두었는데</span>, 임시(ephemeral) 파드만 삭제하는 식으로 삭제 로직을 더 세밀하게 다듬을 때 쓸 수 있다.
 
-```yaml
+:::tip[팁]
+밑줄 친 설명에 마우스를 올리거나 클릭하면 아래 코드에서 관련된 줄이 강조된다.
+:::
+
+```yaml title="cleanup-old-test-pods.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: DeletingPolicy
 metadata:
@@ -137,30 +141,30 @@ spec:
 
 ## Kyverno CEL 라이브러리
 
-Kyverno는 표준 CEL 환경에 내장 라이브러리를 더해 고급 삭제 로직을 지원합니다. DeletingPolicy는 표준 Kyverno CEL 라이브러리를 포함하지만, ImageValidatingPolicy 같은 다른 정책 유형에서 쓸 수 있는 **user** CEL 라이브러리(user-lib)는 명시적으로 제외합니다. 사용할 수 있는 CEL 라이브러리 전체는 [Kyverno CEL 라이브러리 문서](/docs/policy-types/cel-libraries/)를 참고하세요.
+Kyverno는 표준 CEL 환경에 내장 라이브러리를 더해 고급 삭제 로직을 지원한다. DeletingPolicy는 표준 Kyverno CEL 라이브러리를 포함하지만, ImageValidatingPolicy 같은 다른 정책 유형에서 쓸 수 있는 **user** CEL 라이브러리(user-lib)는 명시적으로 제외한다. 사용할 수 있는 CEL 라이브러리 전체는 [Kyverno CEL 라이브러리 문서](/docs/policy-types/cel-libraries/)를 참고한다.
 
 ## 삭제 이벤트 추적
 
-DeletingPolicy는 일정에 따라 리소스를 지우는 데서 끝나지 않고, 삭제를 실행할 때마다 Kubernetes `event`를 **발생시킵니다**. 이 이벤트로 **어떤 정책이 어떤 리소스를 삭제했는지** 정확히 추적할 수 있어서 투명성, 감사, 문제 해결에 도움이 됩니다.
+DeletingPolicy는 일정에 따라 리소스를 지우는 데서 끝나지 않고, 삭제를 실행할 때마다 쿠버네티스 `event`를 **발생시킨다**. 이 이벤트로 **어떤 정책이 어떤 리소스를 삭제했는지** 정확히 추적할 수 있어서 투명성, 감사, 문제 해결에 도움이 된다.
 
 ### 이벤트 확인 방법
 
-삭제 이벤트는 다음 순서로 확인합니다.
+삭제 이벤트는 다음 순서로 확인한다.
 
-1. 정책이 적용된 이벤트를 목록으로 봅니다(요약 보기).
+1. 정책이 적용된 이벤트를 목록으로 본다(요약 보기).
 
 ```bash
 kubectl get events --field-selector reason=PolicyApplied -A
 ```
 
-2. 이벤트 이름을 확인합니다.
+2. 이벤트 이름을 확인한다.
 
 ```bash
 kubectl get events -n <namespace> \
   -o custom-columns=NAME:.metadata.name,REASON:.reason,MESSAGE:.message
 ```
 
-3. 이벤트 전체 내용을 확인합니다.
+3. 이벤트 전체 내용을 확인한다.
 
 ```bash
 kubectl get event <event-name> -n <namespace> -o yaml
@@ -197,7 +201,7 @@ type: Normal
 
 ### 기록되는 내용
 
-`DeletingPolicy`가 삭제를 실행하면 Kyverno는 다음 내용을 담은 이벤트를 만듭니다.
+`DeletingPolicy`가 삭제를 실행하면 Kyverno는 다음 내용을 담은 이벤트를 만든다.
 
 - `action:` Resource cleaned-up
 - `reason:` PolicyApplied
@@ -208,15 +212,15 @@ type: Normal
 
 > **주의**
 >
-> `DeletingPolicy`는 되돌릴 수 없는 작업을 수행합니다. 운영 클러스터에 적용하기 전에 스테이징 환경이나 드라이 런으로 먼저 테스트하세요. 실수로 삭제하는 일이 없도록 셀렉터와 조건을 충분히 엄격하게 작성해야 합니다.
+> `DeletingPolicy`는 되돌릴 수 없는 작업을 수행한다. 운영 클러스터에 적용하기 전에 스테이징 환경이나 드라이 런으로 먼저 테스트한다. 실수로 삭제하는 일이 없도록 셀렉터와 조건을 충분히 엄격하게 작성해야 한다.
 
 ## RBAC 요구 사항
 
-Kyverno cleanup 컨트롤러가 대상 리소스를 삭제하려면 RBAC 권한이 필요합니다. 클러스터 롤에 다음 동사(verb)를 허용해 두세요.
+Kyverno cleanup 컨트롤러가 대상 리소스를 삭제하려면 RBAC 권한이 필요하다. 클러스터롤(ClusterRole)에 다음 동사(verb)를 허용해 둔다.
 
 - 대상 리소스에 대한 `get`, `list`, `watch`, `delete`
 
-예를 들어 컨피그맵을 삭제하려면 다음과 같이 설정합니다.
+예를 들어 컨피그맵을 삭제하려면 다음과 같이 설정한다.
 
 ```yaml
 rules:
@@ -225,20 +229,20 @@ rules:
     verbs: ['get', 'list', 'watch', 'delete']
 ```
 
-> Kyverno cleanup 컨트롤러는 파드를 포함해 어떤 리소스를 삭제하든 RBAC 권한이 필요합니다. 다만 RBAC 권한은 Kyverno 설치 방식에 따라 다릅니다. `Minikube`나 `Kind` 같은 일부 테스트 클러스터에서는 다음과 같은 코어 리소스에 대한 기본 권한이 포함되어 있을 수도, 없을 수도 있습니다.
+> Kyverno cleanup 컨트롤러는 파드를 포함해 어떤 리소스를 삭제하든 RBAC 권한이 필요하다. 다만 RBAC 권한은 Kyverno 설치 방식에 따라 다르다. `Minikube`나 `Kind` 같은 일부 테스트 클러스터에서는 다음과 같은 코어 리소스에 대한 기본 권한이 포함되어 있을 수도, 없을 수도 있다.
 
 - `pods`, `configmaps`, `secrets` 등
 
-> `pods is forbidden: cannot list resource "pods"` 같은 오류가 나면 해당 리소스에 접근할 수 있도록 ClusterRole과 ClusterRoleBinding을 직접 만들어야 합니다.
+> `pods is forbidden: cannot list resource "pods"` 같은 오류가 나면 해당 리소스에 접근할 수 있도록 클러스터롤과 클러스터롤바인딩(ClusterRoleBinding)을 직접 만들어야 한다.
 
-> `deployments`, `networkpolicies` 같은 다른 리소스는 Kyverno 기본 권한에 항상 들어 있지는 않습니다. 설치 방식과 관계없이 명시적으로 RBAC 권한을 부여해야 합니다.
+> `deployments`, `networkpolicies` 같은 다른 리소스는 Kyverno 기본 권한에 항상 들어 있지는 않다. 설치 방식과 관계없이 명시적으로 RBAC 권한을 부여해야 한다.
 
 ## 팁과 모범 사례
 
-- 되돌릴 수 없는 삭제를 켜기 전에 드라이 런이나 감사(audit) 모드를 먼저 사용하세요.
+- 되돌릴 수 없는 삭제를 켜기 전에 드라이 런이나 감사(audit) 모드를 먼저 사용한다.
 
-- 리소스에 와일드카드 `*`를 쓸 때는 특히 주의하세요.
+- 리소스에 와일드카드 `*`를 쓸 때는 특히 주의한다.
 
-- CEL 표현식은 항상 Kyverno CLI로 검증하세요.
+- CEL 표현식은 항상 Kyverno CLI로 검증한다.
 
-- 관측하기 쉽도록 변수와 조건 이름은 의미 있게 짓습니다.
+- 관측하기 쉽도록 변수와 조건 이름은 의미 있게 짓는다.

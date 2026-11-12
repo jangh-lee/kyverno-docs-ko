@@ -4,11 +4,11 @@ weight: 35
 ---
 ## kyverno oci pull
 
-OCI 레지스트리에서 OCI 이미지에 포함된 정책을 풀(pull)하여 로컬 디렉터리에 저장합니다.
+OCI 레지스트리에서 OCI 이미지에 포함된 정책을 풀(pull)하여 로컬 디렉터리에 저장한다.
 
 ### 개요
 
-OCI 레지스트리에서 OCI 이미지에 포함된 정책을 풀(pull)하여 로컬 디렉터리에 저장합니다.
+OCI 레지스트리에서 OCI 이미지에 포함된 정책을 풀(pull)하여 로컬 디렉터리에 저장한다.
 
 
 ```
@@ -35,7 +35,7 @@ kyverno oci pull [dir] [flags]
       --add_dir_header                      If true, adds the file directory to the header of the log messages
       --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
       --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요합니다.
+      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요하다.
       --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
@@ -52,5 +52,5 @@ kyverno oci pull [dir] [flags]
 
 ### 함께 보기
 
-* [kyverno oci](/docs/kyverno-cli/reference/kyverno_oci)	 - OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브합니다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고하세요.
+* [kyverno oci](/docs/kyverno-cli/reference/kyverno_oci)	 - OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브한다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고한다.
 

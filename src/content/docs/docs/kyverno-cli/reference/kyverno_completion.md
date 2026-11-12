@@ -4,20 +4,20 @@ weight: 35
 ---
 ## kyverno completion
 
-지정한 셸용 kyverno 자동 완성 스크립트를 생성합니다.
+지정한 셸용 kyverno 자동 완성 스크립트를 생성한다.
 
 ### 개요
 
-지정한 셸용 kyverno 자동 완성 스크립트를 생성합니다.
+지정한 셸용 kyverno 자동 완성 스크립트를 생성한다.
 
-  셸 자동 완성을 사용하면 kyverno 명령, 하위 명령, 플래그, 인수를 탭 키로 완성할 수 있습니다.
-  명령어를 제안해 주므로 입력량이 줄고 CLI를 더 편하게 쓸 수 있습니다.
+  셸 자동 완성을 사용하면 kyverno 명령, 하위 명령, 플래그, 인수를 탭 키로 완성할 수 있다.
+  명령어를 제안해 주므로 입력량이 줄고 CLI를 더 편하게 쓸 수 있다.
 
-  생성된 스크립트에는 셸별 함수가 들어 있습니다. 이 함수가 셸의 자동 완성 시스템과 연동되어
-  Tab 키를 누르면 명령을 지능적으로 완성해 줍니다.
+  생성된 스크립트에는 셸별 함수가 들어 있다. 이 함수가 셸의 자동 완성 시스템과 연동되어
+  Tab 키를 누르면 명령을 지능적으로 완성해 준다.
 
   자동 완성을 사용하려면 생성된 스크립트를 셸 프로필에서 source 하거나
-  셸의 자동 완성 디렉터리에 저장합니다. 셸별 방법은 아래 예시를 참고하세요.
+  셸의 자동 완성 디렉터리에 저장한다. 셸별 방법은 아래 예시를 참고한다.
 
 
 ```
@@ -61,7 +61,7 @@ kyverno completion [bash|zsh|fish|powershell]
       --add_dir_header                      If true, adds the file directory to the header of the log messages
       --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
       --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요합니다.
+      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요하다.
       --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
@@ -78,5 +78,5 @@ kyverno completion [bash|zsh|fish|powershell]
 
 ### 함께 보기
 
-* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구입니다.
+* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구이다.
 

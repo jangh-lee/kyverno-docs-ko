@@ -4,11 +4,11 @@ weight: 35
 ---
 ## kyverno oci
 
-OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브합니다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고하세요.
+OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브한다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고한다.
 
 ### 개요
 
-OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브합니다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고하세요.
+OCI 레지스트리에서 Kyverno CEL 정책 번들을 푸시, 풀, 검증, 조회, 리졸브한다. 각 하위 명령의 플래그와 예시는 "kyverno oci <subcommand> --help"를 참고한다.
 
 
 ```
@@ -46,7 +46,7 @@ kyverno oci [flags]
       --add_dir_header                      If true, adds the file directory to the header of the log messages
       --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
       --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요합니다.
+      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요하다.
       --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
@@ -63,10 +63,10 @@ kyverno oci [flags]
 
 ### 함께 보기
 
-* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구입니다.
-* [kyverno oci inspect](/docs/kyverno-cli/reference/kyverno_oci_inspect)	 - 푸시된 번들의 리졸브된 다이제스트, 리소스 인덱스, 세트, 소스 및 리비전 메타데이터, 매니페스트 어노테이션, Kyverno 호환성을 보여 줍니다.
-* [kyverno oci pull](/docs/kyverno-cli/reference/kyverno_oci_pull)	 - OCI 레지스트리에서 OCI 이미지에 포함된 정책을 풀(pull)하여 로컬 디렉터리에 저장합니다.
-* [kyverno oci push](/docs/kyverno-cli/reference/kyverno_oci_push)	 - OCI 이미지에 포함할 정책을 OCI 레지스트리에 푸시합니다.
-* [kyverno oci resolve](/docs/kyverno-cli/reference/kyverno_oci_resolve)	 - 번들 태그를 변경 불가능한 다이제스트로 리졸브하고, "kyverno test", "kyverno apply", "kyverno oci pull" 또는 Flux OCIRepository에 전달할 수 있는 다이제스트 고정 참조를 출력합니다.
-* [kyverno oci validate](/docs/kyverno-cli/reference/kyverno_oci_validate)	 - 아무것도 푸시하지 않고 번들 디렉터리나 파일, 또는 푸시된 OCI 이미지를 검증합니다. 기본적으로 로컬 검증은 "kyverno oci push"가 업로드 단계에 도달할 때에만 성공합니다. --kyverno-version과 --strict는 모두 이 기준을 바꿉니다(아래 참고).
+* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구이다.
+* [kyverno oci inspect](/docs/kyverno-cli/reference/kyverno_oci_inspect)	 - 푸시된 번들의 리졸브된 다이제스트, 리소스 인덱스, 세트, 소스 및 리비전 메타데이터, 매니페스트 어노테이션, Kyverno 호환성을 보여 준다.
+* [kyverno oci pull](/docs/kyverno-cli/reference/kyverno_oci_pull)	 - OCI 레지스트리에서 OCI 이미지에 포함된 정책을 풀(pull)하여 로컬 디렉터리에 저장한다.
+* [kyverno oci push](/docs/kyverno-cli/reference/kyverno_oci_push)	 - OCI 이미지에 포함할 정책을 OCI 레지스트리에 푸시한다.
+* [kyverno oci resolve](/docs/kyverno-cli/reference/kyverno_oci_resolve)	 - 번들 태그를 변경 불가능한 다이제스트로 리졸브하고, "kyverno test", "kyverno apply", "kyverno oci pull" 또는 Flux OCIRepository에 전달할 수 있는 다이제스트 고정 참조를 출력한다.
+* [kyverno oci validate](/docs/kyverno-cli/reference/kyverno_oci_validate)	 - 아무것도 푸시하지 않고 번들 디렉터리나 파일, 또는 푸시된 OCI 이미지를 검증한다. 기본적으로 로컬 검증은 "kyverno oci push"가 업로드 단계에 도달할 때에만 성공한다. --kyverno-version과 --strict는 모두 이 기준을 바꾼다(아래 참고).
 

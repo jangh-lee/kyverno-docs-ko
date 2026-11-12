@@ -4,15 +4,15 @@ weight: 35
 ---
 ## kyverno docs
 
-레퍼런스 문서를 생성합니다.
+레퍼런스 문서를 생성한다.
 
 ### 개요
 
-레퍼런스 문서를 생성합니다.
+레퍼런스 문서를 생성한다.
 
-  docs 명령은 Kyverno CLI 레퍼런스 문서를 생성합니다.
+  docs 명령은 Kyverno CLI 레퍼런스 문서를 생성한다.
 
-  단순한 마크다운 파일이나 웹사이트용 마크다운을 생성할 수 있습니다.
+  단순한 마크다운 파일이나 웹사이트용 마크다운을 생성할 수 있다.
 
 
 ```
@@ -32,10 +32,10 @@ kyverno docs [flags]
 ### 옵션
 
 ```
-      --autogenTag      생성된 문서에 타임스탬프를 포함할지 결정합니다 (기본값 true)
+      --autogenTag      생성된 문서에 타임스탬프를 포함할지 결정한다 (기본값 true)
   -h, --help            docs 도움말
-      --markdownLinks   생성된 문서에 마크다운 파일 링크를 포함할지 결정합니다
-      --noDate          생성된 문서에 날짜를 포함할지 결정합니다
+      --markdownLinks   생성된 문서에 마크다운 파일 링크를 포함할지 결정한다
+      --noDate          생성된 문서에 날짜를 포함할지 결정한다
   -o, --output string   출력 경로 (기본값 ".")
       --website         웹사이트용 버전
 ```
@@ -46,7 +46,7 @@ kyverno docs [flags]
       --add_dir_header                      If true, adds the file directory to the header of the log messages
       --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
       --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요합니다.
+      --kubeconfig string                   kubeconfig 경로. 클러스터 외부에서 실행할 때만 필요하다.
       --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
       --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
@@ -63,5 +63,5 @@ kyverno docs [flags]
 
 ### 함께 보기
 
-* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구입니다.
+* [kyverno](/docs/kyverno-cli/reference/kyverno)	 - 쿠버네티스 네이티브 정책 관리 도구이다.
 
