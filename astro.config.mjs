@@ -9,8 +9,8 @@ const base = (process.env.BASE_PATH || '/').replace(/\/$/, '')
 
 /**
  * 문서 안의 사이트 내부 링크("/docs/...")를 처리하는 rehype 플러그인입니다.
- * - 번역해서 이 사이트에 있는 페이지(policy-types)는 base 경로를 붙입니다.
- * - 아직 번역하지 않은 페이지는 원본(kyverno.io)으로 연결합니다.
+ * - /docs/... 는 이 사이트의 번역 문서이므로 base 경로를 붙입니다.
+ * - 그 밖의 경로(/policies, /blog 등)는 원본(kyverno.io)으로 연결합니다.
  */
 function rewriteInternalLinks() {
   const ORIGIN = 'https://kyverno.io'
@@ -18,7 +18,7 @@ function rewriteInternalLinks() {
     if (node.type === 'element' && node.tagName === 'a' && typeof node.properties?.href === 'string') {
       const href = node.properties.href
       if (href.startsWith('/') && !href.startsWith('//')) {
-        node.properties.href = href.startsWith('/docs/policy-types')
+        node.properties.href = href === '/docs' || href.startsWith('/docs/') || href.startsWith('/docs#')
           ? base + href
           : ORIGIN + href
       }
@@ -47,7 +47,14 @@ export default defineConfig({
         { icon: 'github', label: 'GitHub', href: 'https://github.com/kyverno/kyverno' },
       ],
       sidebar: [
+        { label: '소개', collapsed: true, items: [{ autogenerate: { directory: 'docs/introduction' } }] },
+        { label: '설치', collapsed: true, items: [{ autogenerate: { directory: 'docs/installation' } }] },
         { label: '정책 유형', items: [{ autogenerate: { directory: 'docs/policy-types' } }] },
+        { label: '가이드', collapsed: true, items: [{ autogenerate: { directory: 'docs/guides' } }] },
+        { label: '레퍼런스', collapsed: true, items: [{ autogenerate: { directory: 'docs/reference' } }] },
+        { label: 'Kyverno CLI', collapsed: true, items: [{ autogenerate: { directory: 'docs/kyverno-cli' } }] },
+        { label: '서브프로젝트', collapsed: true, items: [{ autogenerate: { directory: 'docs/subprojects' } }] },
+        { label: 'CRD', collapsed: true, items: [{ autogenerate: { directory: 'docs/crds' } }] },
       ],
     }),
   ],

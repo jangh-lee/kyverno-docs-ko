@@ -8,6 +8,8 @@ sidebar:
 
 Kyverno는 Kubernetes의 CEL 환경에 라이브러리를 더해 복잡한 정책 로직과 고급 기능을 쓸 수 있게 합니다. 이 라이브러리는 ValidatingPolicy와 MutatingPolicy에서 모두 쓸 수 있습니다.
 
+<a id="resource-library"></a>
+
 ## Resource 라이브러리
 
 **Resource 라이브러리**는 `resource.Get()`, `resource.List()` 같은 함수로 클러스터의 Kubernetes 리소스를 하나씩 또는 목록으로 가져옵니다. 새 객체를 검증하거나 변경하기 전에 기존 ConfigMap, Service, Deployment를 확인하는 것처럼 다른 리소스의 상태에 의존하는 정책을 작성할 때 유용합니다.
@@ -153,6 +155,8 @@ spec:
       message: >-
         The root path already exists in the cluster but not in the namespace.
 ```
+
+<a id="http-library"></a>
 
 ## HTTP 라이브러리
 
@@ -335,6 +339,8 @@ spec:
           }
 ```
 
+<a id="image-library"></a>
+
 ## Image 라이브러리
 
 **Image 라이브러리**는 이미지 참조를 파싱하고 분석하는 함수를 제공합니다. 정책 작성자는 레지스트리, 태그, 다이제스트를 검사해서 특정 레지스트리의 이미지만 허용하거나 태그를 금지하는 식으로 이미지 표준을 강제할 수 있습니다.
@@ -491,6 +497,8 @@ spec:
 
 **글로벌 컨텍스트**를 활용하면 Kyverno가 중복 조회를 없애고 정책 사이에서 데이터를 효율적으로 공유하므로, 검증의 정확도와 성능이 모두 좋아집니다.
 
+<a id="hash-library"></a>
+
 ## Hash 라이브러리
 
 **Hash 라이브러리**는 임의의 값에 해시 함수를 실행합니다. 검증에도 쓸 수 있고, 해시 정보를 객체에 넣는 변경에도 쓸 수 있습니다.
@@ -531,6 +539,8 @@ spec:
       messageExpression: >-
         'Expected MD5 hash ' + variables.expectedHash + ', got: ' + variables.md5sum
 ```
+
+<a id="math-library"></a>
 
 ## Math 라이브러리
 
@@ -583,6 +593,8 @@ spec:
         ' exceeds maximum of 8.0 cores'
 ```
 
+<a id="random-library"></a>
+
 ## Random 라이브러리
 
 **Random 라이브러리**는 정규식 패턴에 맞는 임의의 문자열을 만듭니다. 변경 정책에서 고유 식별자, 토큰, 기본값을 만들 때 유용합니다. 사용자 정의 패턴을 지원하며, 인자를 주지 않으면 기본 패턴을 사용합니다.
@@ -621,6 +633,8 @@ spec:
             }
           }
 ```
+
+<a id="transform-library"></a>
 
 ## Transform 라이브러리
 
@@ -687,6 +701,8 @@ spec:
 EOF
 Error from server: error when creating "STDIN": admission webhook "vpol.validate.kyverno.svc-fail" denied the request: Policy require-key failed: KEY must be 123-456-789.
 ```
+
+<a id="json-library"></a>
 
 ## JSON 라이브러리
 
@@ -769,6 +785,8 @@ EOF
 Error from server: error when creating "STDIN": admission webhook "vpol.validate.kyverno.svc-fail" denied the request: Policy require-security-approval failed: Deployment is not approved by security policy.
 ```
 
+<a id="yaml-library"></a>
+
 ## YAML 라이브러리
 
 **YAML 라이브러리**는 `yaml.parse()` 함수로 YAML 형식의 문자열을 구조화된 데이터로 파싱합니다. ConfigMap이나 어노테이션에 저장된 YAML 설정을 검증할 때 특히 유용합니다.
@@ -850,6 +868,8 @@ EOF
 Error from server: error when creating "STDIN": admission webhook "vpol.validate.kyverno.svc-fail" denied the request: Policy check-goodboi failed: "Only good bois allowed."
 ```
 
+<a id="time-functions"></a>
+
 ## Time 함수
 
 Kyverno CEL 실행 환경에는 시간과 관련된 함수가 몇 가지 들어 있습니다. 현재 시각 가져오기, 타임스탬프 자르기(truncate), 타임스탬프를 cron 형식으로 변환하기가 그것입니다.
@@ -905,6 +925,8 @@ spec:
           - policyexceptions
   schedule: '*/10 * * * *'
 ```
+
+<a id="x509-library"></a>
 
 ## X509 라이브러리
 

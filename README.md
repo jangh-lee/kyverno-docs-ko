@@ -1,21 +1,12 @@
 # Kyverno 한국어 가이드
 
-[Kyverno 공식 문서](https://kyverno.io/docs/)의 `policy-types` 섹션을 한국어로 옮긴 문서 사이트입니다. Astro Starlight로 만들고 GitHub Pages로 배포합니다.
+[Kyverno 공식 문서](https://kyverno.io/docs/)(`docs` 전체)를 한국어로 옮긴 문서 사이트입니다. Astro Starlight로 만들고 GitHub Pages로 배포합니다.
 
 ## 번역 범위
 
-| 문서 | 파일 |
-| --- | --- |
-| 개요 | `overview.md` |
-| ValidatingPolicy | `validating-policy.mdx` |
-| MutatingPolicy | `mutating-policy.mdx` |
-| GeneratingPolicy | `generating-policy.mdx` |
-| DeletingPolicy | `deleting-policy.mdx` |
-| ImageValidatingPolicy | `image-validating-policy.mdx` |
-| CEL 라이브러리 | `cel-libraries.mdx` |
-| 글로벌 컨텍스트 캐싱 | `global-context-caching.md` |
+원문 저장소 [kyverno/website](https://github.com/kyverno/website)의 `src/content/docs/docs/` 아래 문서 전체(텍스트 62개)와 그 이미지입니다. 같은 상대 경로에 번역문이 있습니다: `introduction`, `installation`, `policy-types`, `guides`, `reference`, `kyverno-cli`, `subprojects`, `crds`.
 
-문서는 `src/content/docs/docs/policy-types/`에 있습니다. 아직 번역하지 않은 페이지(`/docs/guides/...` 등)로 가는 링크는 빌드할 때 원문(kyverno.io)으로 연결됩니다([astro.config.mjs](astro.config.mjs)의 `rewriteInternalLinks`). 새 섹션을 번역해 추가하면 그 경로를 이 함수에 등록하세요.
+문서는 `src/content/docs/docs/`에 있습니다. `/docs/...` 링크는 이 사이트의 번역문으로 연결되고, 블로그나 정책 라이브러리처럼 docs 밖의 링크는 빌드할 때 원문(kyverno.io)으로 연결됩니다([astro.config.mjs](astro.config.mjs)의 `rewriteInternalLinks`). 제목을 번역하면 원문의 영어 앵커(`#container-flags` 등)가 사라지므로, 그런 곳에는 `<a id="..."></a>`를 제목 앞에 넣어 두었습니다.
 
 ## 번역 원칙
 
