@@ -40,6 +40,8 @@ export default defineConfig({
       defaultLocale: 'root',
       locales: { root: { label: '한국어', lang: 'ko' } },
       favicon: '/favicon.svg',
+      customCss: ['./src/styles/custom.css'],
+      head: [{ tag: 'script', attrs: { src: `${base}/sidebar-toggle.js` } }],
       editLink: { baseUrl: 'https://github.com/kyverno/website/edit/main/' },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/kyverno/kyverno' },

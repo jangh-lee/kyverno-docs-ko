@@ -1,0 +1,32 @@
+/* 사이드바 열기/닫기 (데스크톱) */
+.sidebar-toggle { display: none; }
+
+@media (min-width: 50rem) {
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    z-index: calc(var(--sl-z-index-menu) + 1);
+    top: calc(var(--sl-nav-height) + 0.75rem);
+    left: calc(var(--sl-sidebar-width) - 1.1rem);
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border: 1px solid var(--sl-color-hairline);
+    border-radius: 50%;
+    background: var(--sl-color-bg-nav);
+    color: var(--sl-color-text);
+    cursor: pointer;
+    box-shadow: var(--sl-shadow-md);
+    transition: left 0.15s ease;
+  }
+  .sidebar-toggle:hover { background: var(--sl-color-accent-low); }
+  .sidebar-toggle svg { width: 1.1rem; height: 1.1rem; transition: transform 0.15s ease; }
+
+  html[data-sidebar='hidden'] { --sl-sidebar-width: 0rem; }
+  html[data-sidebar='hidden'] .sidebar-pane { display: none; }
+  html[data-sidebar='hidden'] .sidebar-toggle { left: 0.75rem; }
+  html[data-sidebar='hidden'] .sidebar-toggle svg { transform: rotate(180deg); }
+  html[data-sidebar='hidden'] .main-frame { padding-inline-start: 0; }
+}
