@@ -65,9 +65,9 @@ helm upgrade kyverno-pss kyverno/kyverno-policies \
   --set podSecurityVersion=v1.30
 ```
 
-values 파일에서는 버전을 따옴표로 감싼다.
+values 파일에서는 <span class="hl-link" tabindex="0" data-code="podsecurity-version.yaml" data-lines="1">버전을 따옴표로 감싼다</span>.
 
-```yaml
+```yaml title="podsecurity-version.yaml"
 podSecurityVersion: 'v1.30'
 ```
 
@@ -166,9 +166,9 @@ helm upgrade kyverno-pss kyverno/kyverno-policies \
   --set podSecurityUserNamespaces=true
 ```
 
-다음 매니페스트를 `userns-pod.yaml`로 저장한다. 이 파드는 사용자 네임스페이스 안에서 root(`runAsUser: 0`)로 실행되며, 적용 가능한 나머지 Restricted 프로파일 요구 사항은 충족한다.
+다음 매니페스트를 `userns-pod.yaml`로 저장한다. 이 파드는 <span class="hl-link" tabindex="0" data-code="userns-pod.yaml" data-lines="6,8">사용자 네임스페이스 안에서 root(`runAsUser: 0`)로 실행되며</span>, 적용 가능한 <span class="hl-link" tabindex="0" data-code="userns-pod.yaml" data-lines="9-10,16-19">나머지 Restricted 프로파일 요구 사항은 충족한다</span>.
 
-```yaml
+```yaml title="userns-pod.yaml"
 apiVersion: v1
 kind: Pod
 metadata:

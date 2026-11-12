@@ -30,7 +30,7 @@ helm install kyverno kyverno/kyverno -n kyverno --create-namespace
 
 검증 가이드에서는 모든 파드에 `team` 레이블이 있어야 한다는 간단한 Kyverno 정책 예제를 본다. 검증은 정책의 가장 흔한 사용 사례로, "예" 또는 "아니오"를 판단한다. 정책을 준수하는 리소스는 통과하고("예, 허용된다") 준수하지 않는 리소스는 통과하지 못할 수 있다("아니오, 허용되지 않는다").
 
-아래 정책을 클러스터에 추가한다. `quick-start-validation` 네임스페이스의 모든 파드에 `team` 레이블을 요구하는 검증 규칙 하나가 들어 있다. Kyverno는 검증, 변경, 생성, 정리, 이미지 검증을 위한 여러 정책 유형을 지원한다. `validationActions` 필드는 `Deny`로 설정되어 있어 준수하지 않는 파드를 차단한다.
+아래 정책을 클러스터에 추가한다. <span class="hl-link" tabindex="0" data-code="require-labels.yaml" data-lines="14-16">`quick-start-validation` 네임스페이스의</span> 모든 파드에 <span class="hl-link" tabindex="0" data-code="require-labels.yaml" data-lines="22-24">`team` 레이블을 요구하는 검증 규칙 하나</span>가 들어 있다. Kyverno는 검증, 변경, 생성, 정리, 이미지 검증을 위한 여러 정책 유형을 지원한다. <span class="hl-link" tabindex="0" data-code="require-labels.yaml" data-lines="7-8">`validationActions` 필드는 `Deny`로 설정되어 있어</span> 준수하지 않는 파드를 차단한다.
 
 이 예제용 네임스페이스를 만든다. 이 예제의 모든 파드는 이 네임스페이스에 만든다.
 
@@ -38,7 +38,7 @@ helm install kyverno kyverno/kyverno -n kyverno --create-namespace
 kubectl create namespace quick-start-validation
 ```
 
-```sh
+```yaml title="require-labels.yaml"
 kubectl create -f- << EOF
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
@@ -74,7 +74,7 @@ kubectl -n quick-start-validation create deployment nginx --image=nginx
 
 어드미션 요청이 `label 'team' is required` 메시지와 함께 거부된다.
 
-정책이 파드를 매칭하지만, Kyverno는 [자동 생성(autogen)](/docs/policy-types/validating-policy#autogen)으로 디플로이먼트 같은 파드 컨트롤러에도 이 정책을 적용할 수 있다.
+정책이 파드를 매칭하지만, Kyverno는 [자동 생성(autogen)](/docs/policy-types/validating-policy#autogen)으로 <span class="hl-link" tabindex="0" data-code="require-labels.yaml" data-lines="9-12">디플로이먼트 같은 파드 컨트롤러에도 이 정책을 적용할 수 있다</span>.
 
 이번에는 필수 레이블을 붙여 파드를 만든다.
 
@@ -99,7 +99,7 @@ kubectl delete namespace quick-start-validation
 
 변경(mutation)은 리소스가 클러스터에 어드미션되기 전에 리소스를 어떤 식으로든 바꾸는("mutate") 기능이다. 변경 규칙은 파드나 컨피그맵(ConfigMap) 같은 리소스를 선택하고 원하는 상태를 정의한다는 점에서 검증 규칙과 비슷하다.
 
-아래 Kyverno 변경 정책을 클러스터에 추가한다. 이 정책은 `team` 레이블이 아직 없는 새 파드에만 `team` 레이블을 값 `bravo`로 추가한다. Kyverno는 CEL 표현식으로 조건 로직을 처리하므로 정책을 쉽게 쓰고 읽을 수 있다.
+아래 Kyverno 변경 정책을 클러스터에 추가한다. 이 정책은 <span class="hl-link" tabindex="0" data-code="add-labels.yaml" data-lines="16-18">`team` 레이블이 아직 없는 새 파드에만</span> <span class="hl-link" tabindex="0" data-code="add-labels.yaml" data-lines="19-29">`team` 레이블을 값 `bravo`로 추가한다</span>. Kyverno는 CEL 표현식으로 조건 로직을 처리하므로 정책을 쉽게 쓰고 읽을 수 있다.
 
 이 예제용 네임스페이스를 만든다.
 
@@ -107,7 +107,7 @@ kubectl delete namespace quick-start-validation
 kubectl create namespace quick-start-mutation
 ```
 
-```sh
+```yaml title="add-labels.yaml"
 kubectl create -f- << EOF
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
@@ -202,7 +202,7 @@ kubectl -n quick-start-source create secret docker-registry regcred \
 
 background-controller가 `regcred`라는 소스 시크릿만 읽을 수 있도록 롤(Role)과 롤바인딩을 만든다.
 
-```sh
+```yaml title="regcred-rbac.yaml"
 kubectl apply -f- << EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -275,9 +275,9 @@ roleRef:
 EOF
 ```
 
-소스 롤은 `regcred` 읽기만 허용한다. 대상 네임스페이스에서 컨트롤러는 `regcred`만 읽고 시크릿을 생성할 수 있다. 쿠버네티스 RBAC은 리소스 이름으로 `create`를 제한할 수 없으므로, 이 네임스페이스는 예제 전용으로 둔다. 두 롤과 롤바인딩이 모두 만들어진 뒤에 아래 정책을 생성한다. 이 정책은 준비 레이블을 `true`로 처음 추가하는 업데이트에만 일치하므로, 이후의 네임스페이스 업데이트에서는 생성이 다시 실행되지 않는다.
+<span class="hl-link" tabindex="0" data-code="regcred-rbac.yaml" data-lines="7-15">소스 롤은 `regcred` 읽기만 허용한다</span>. <span class="hl-link" tabindex="0" data-code="regcred-rbac.yaml" data-lines="41-55">대상 네임스페이스에서 컨트롤러는 `regcred`만 읽고 시크릿을 생성할 수 있다</span>. 쿠버네티스 RBAC은 리소스 이름으로 `create`를 제한할 수 없으므로, 이 네임스페이스는 예제 전용으로 둔다. 두 롤과 롤바인딩이 모두 만들어진 뒤에 아래 정책을 생성한다. 이 정책은 <span class="hl-link" tabindex="0" data-code="sync-secrets.yaml" data-lines="11,13-15">준비 레이블을 `true`로 처음 추가하는 업데이트에만 일치하므로</span>, 이후의 네임스페이스 업데이트에서는 생성이 다시 실행되지 않는다.
 
-```sh
+```yaml title="sync-secrets.yaml"
 kubectl create -f- << EOF
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy

@@ -111,14 +111,14 @@ spec:
 
 ### 2단계: 정책에서 참조하기
 
-```yaml
+```yaml title="cached-configmaps.yaml"
 spec:
   variables:
     - name: cachedConfigmaps
       expression: globalContext.Get("my-first-cache", "")
 ```
 
-이제 인라인 API 호출 없이 CEL 표현식에서 `variables.cachedConfigmaps`를 쓸 수 있다. [전체 정책 예시](#2단계-정책을-항목에-연결하기)와 [설정 모드](#설정-모드)를 참고한다.
+이제 인라인 API 호출 없이 <span class="hl-link" tabindex="0" data-code="cached-configmaps.yaml" data-lines="3-4">CEL 표현식에서 `variables.cachedConfigmaps`를 쓸 수 있다</span>. [전체 정책 예시](#2단계-정책을-항목에-연결하기)와 [설정 모드](#설정-모드)를 참고한다.
 
 ---
 
@@ -207,9 +207,9 @@ spec:
 
 프로젝션은 `urlPath`(쿠버네티스 API 서버)와 `service.url`(외부 엔드포인트) 모두에서 동작한다. 두 가지 형태는 다음과 같다.
 
-**쿠버네티스 API 서버 응답은** `urlPath`를 사용한다.
+<span class="hl-link" tabindex="0" data-code="projection-urlpath.yaml" data-lines="7">**쿠버네티스 API 서버 응답은** `urlPath`를 사용한다</span>.
 
-```yaml
+```yaml title="projection-urlpath.yaml"
 apiVersion: kyverno.io/v2
 kind: GlobalContextEntry
 metadata:
@@ -222,9 +222,9 @@ spec:
       jmesPath: 'items[].metadata.name'
 ```
 
-**외부 엔드포인트 응답은** `service.url`을 사용한다.
+<span class="hl-link" tabindex="0" data-code="projection-service-url.yaml" data-lines="7-8">**외부 엔드포인트 응답은** `service.url`을 사용한다</span>.
 
-```yaml
+```yaml title="projection-service-url.yaml"
 apiVersion: kyverno.io/v2
 kind: GlobalContextEntry
 metadata:
@@ -243,9 +243,9 @@ spec:
 
 ### 정책에서 캐시 데이터 참조하기
 
-`globalContext.Get()`으로 `GlobalContextEntry`를 참조한다. 첫 번째 인자는 항목 이름이고 두 번째 인자는 그 항목에 정의한 프로젝션 이름이다. 빈 문자열을 넘기면 캐시된 페이로드 전체를 가져오며, 이후 CEL로 필터링한다.
+`globalContext.Get()`으로 `GlobalContextEntry`를 참조한다. 첫 번째 인자는 항목 이름이고 두 번째 인자는 그 항목에 정의한 프로젝션 이름이다. <span class="hl-link" tabindex="0" data-code="global-context-get.yaml" data-lines="4">빈 문자열을 넘기면 캐시된 페이로드 전체를 가져오며</span>, 이후 CEL로 필터링한다.
 
-```yaml
+```yaml title="global-context-get.yaml"
 spec:
   variables:
     - name: configmapNames
@@ -257,9 +257,9 @@ spec:
 > - `kubernetesResource` 모드 → `[].metadata.name`을 사용한다.
 > - `apiCall.urlPath` 모드 → `items[].metadata.name`을 사용한다.
 
-`GlobalContextEntry` 스펙에 `projections`를 정의했다면 두 번째 인자로 프로젝션 이름을 넘긴다.
+`GlobalContextEntry` 스펙에 `projections`를 정의했다면 <span class="hl-link" tabindex="0" data-code="projection-name.yaml" data-lines="4">두 번째 인자로 프로젝션 이름을 넘긴다</span>.
 
-```yaml
+```yaml title="projection-name.yaml"
 spec:
   variables:
     - name: configmapNames

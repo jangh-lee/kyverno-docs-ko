@@ -66,9 +66,9 @@ kubectl get policyreport -n default -o json \
 
 리포트 컨트롤러는 정책을 설치하기 전에 만들어진 리소스를 포함해 기존 리소스를 평가할 수 있다. 정책이 `validationActions: [Deny]`를 사용하더라도 백그라운드 스캔은 기존 리소스를 차단하거나 삭제하지 않는다.
 
-백그라운드 평가를 지원하는 정책에서는 `spec.evaluation.background.enabled`로 이를 제어한다.
+백그라운드 평가를 지원하는 정책에서는 <span class="hl-link" tabindex="0" data-code="background-eval-on.yaml" data-lines="5-6">`spec.evaluation.background.enabled`로 이를 제어한다</span>.
 
-```yaml
+```yaml title="background-eval-on.yaml"
 spec:
   evaluation:
     admission:
@@ -79,9 +79,9 @@ spec:
 
 백그라운드 스캔은 주기적으로 실행되며 실행 간격은 [리포트 컨트롤러 플래그](/docs/installation/customization#container-flags)로 설정한다. 스캔은 리포트 컨트롤러가 처리하며, 리소스 생성과 변경을 맡는 백그라운드 컨트롤러는 처리하지 않는다.
 
-요청한 사용자의 신원처럼 어드미션에서만 얻을 수 있는 정보에 의존하는 정책은 백그라운드 평가를 비활성화해야 한다.
+요청한 사용자의 신원처럼 어드미션에서만 얻을 수 있는 정보에 의존하는 정책은 <span class="hl-link" tabindex="0" data-code="background-eval-off.yaml" data-lines="2-4">백그라운드 평가를 비활성화해야 한다</span>.
 
-```yaml
+```yaml title="background-eval-off.yaml"
 spec:
   evaluation:
     background:
@@ -92,9 +92,9 @@ spec:
 
 ## 예시: PolicyReport 만들기
 
-파드에 `team` 레이블을 요구하는 정책을 적용한다. 이 예시는 `Audit`를 사용하므로 규칙을 위반한 파드도 생성되고 리포트에 기록된다.
+파드에 <span class="hl-link" tabindex="0" data-code="require-team-label.yaml" data-lines="16-18">`team` 레이블을 요구하는 정책</span>을 적용한다. 이 예시는 <span class="hl-link" tabindex="0" data-code="require-team-label.yaml" data-lines="6">`Audit`를 사용하므로</span> 규칙을 위반한 파드도 생성되고 리포트에 기록된다.
 
-```yaml
+```yaml title="require-team-label.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -149,9 +149,9 @@ Kyverno는 `reports.kyverno.io/v1` API 그룹의 `EphemeralReport`와 `ClusterEp
 - `--allowedResults`는 저장할 결과를 선택한다. 기본값은 `pass,fail,error,warn,skip`이며, 결과를 제한하면 etcd 사용량을 줄일 수 있다.
 - 리포트 컨트롤러에는 평가할 리소스의 `get`, `list`, `watch` 권한이 필요하다.
 
-개별 정책의 리포트를 비활성화하려면 값에 상관없이 `reports.kyverno.io/disabled` 레이블을 추가한다.
+개별 정책의 리포트를 비활성화하려면 값에 상관없이 <span class="hl-link" tabindex="0" data-code="disable-reports-label.yaml" data-lines="2-3">`reports.kyverno.io/disabled` 레이블을 추가한다</span>.
 
-```yaml
+```yaml title="disable-reports-label.yaml"
 metadata:
   labels:
     reports.kyverno.io/disabled: 'true'
@@ -177,9 +177,9 @@ OpenReports 통합은 Kyverno 1.15에서 알파 기능으로 도입되었다.
 
 Kyverno는 쿠버네티스 `ValidatingAdmissionPolicy` 리소스와 바인딩의 결과도 리포트할 수 있다. 리포트 컨트롤러에서 `--validatingAdmissionPolicyReports=true`를 활성화한다. 이 플래그는 기본적으로 비활성화되어 있다.
 
-예를 들어 디플로이먼트(Deployment)의 레플리카 수를 검사하는 정책과 바인딩을 적용한다.
+예를 들어 디플로이먼트(Deployment)의 <span class="hl-link" tabindex="0" data-code="check-deployment-replicas.yaml" data-lines="12-13">레플리카 수를 검사하는 정책</span>과 바인딩을 적용한다.
 
-```yaml
+```yaml title="check-deployment-replicas.yaml"
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -217,4 +217,4 @@ kubectl create deployment deployment-example --image=nginx --replicas=7 -n stagi
 kubectl get policyreport -n staging -o yaml
 ```
 
-백그라운드 스캔이 끝나면 리포트에 `check-deployment-replicas` 실패 결과가 기록된다. 해당 디플로이먼트의 레플리카가 5개를 넘기 때문이다.
+백그라운드 스캔이 끝나면 리포트에 `check-deployment-replicas` 실패 결과가 기록된다. 해당 디플로이먼트의 <span class="hl-link" tabindex="0" data-code="check-deployment-replicas.yaml" data-lines="13">레플리카가 5개를 넘기 때문이다</span>.

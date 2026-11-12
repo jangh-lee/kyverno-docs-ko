@@ -29,9 +29,9 @@ Kyverno 정책에는 정책이 적용될 리소스를 세밀하게 제어하는 
 
 ### 어드미션 모드에서 ValidatingPolicy와 PolicyException 사용
 
-다음 `ValidatingPolicy`는 모든 `Deployment` 리소스에 `env=prod` 레이블을 요구한다. 이 조건을 충족하지 못하면 정책이 요청을 거부한다.
+다음 `ValidatingPolicy`는 <span class="hl-link" tabindex="0" data-code="require-prod-label.yaml" data-lines="14-17">모든 `Deployment` 리소스에 `env=prod` 레이블을 요구한다</span>. 이 조건을 충족하지 못하면 정책이 요청을 거부한다.
 
-```yaml
+```yaml title="require-prod-label.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -51,9 +51,9 @@ spec:
       messageExpression: "'Deployment must have label env=prod.'"
 ```
 
-특정 `Deployment`를 위 정책의 적용에서 제외하려면 `PolicyException`을 정의한다. 이 예시는 CEL 표현식으로 이름이 `skipped-deployment`인 `Deployment`를 매칭해 검증을 우회하게 한다.
+특정 `Deployment`를 위 정책의 적용에서 제외하려면 `PolicyException`을 정의한다. 이 예시는 <span class="hl-link" tabindex="0" data-code="exclude-skipped-deployment.yaml" data-lines="10-12">CEL 표현식으로 이름이 `skipped-deployment`인 `Deployment`를 매칭해</span> 검증을 우회하게 한다.
 
-```yaml
+```yaml title="exclude-skipped-deployment.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: PolicyException
 metadata:
@@ -70,7 +70,7 @@ spec:
 
 실제 어드미션 요청 중에 예외가 적용되면 Kyverno는 그 판단을 `PolicyReport`에 기록한다. 다음은 일치하는 `PolicyException` 때문에 정책 규칙을 건너뛴 예시이다.
 
-```yaml
+```yaml title="skip-report.yaml"
 apiVersion: wgpolicyk8s.io/v1alpha2
 kind: PolicyReport
 metadata:
@@ -106,17 +106,17 @@ summary:
 
 #### PolicyException의 PolicyReport 결과 해석
 
-- **result: skip** — 규칙이 적용되지 않았음을 나타낸다.
-- **process: admission review** — 실제 어드미션 요청 중에 평가가 이루어졌음을 확인해 준다.
-- **exceptions: exclude-skipped-deployment** — 적용된 `PolicyException`을 가리킨다.
+- **result: skip** — <span class="hl-link" tabindex="0" data-code="skip-report.yaml" data-lines="14">규칙이 적용되지 않았음을 나타낸다.</span>
+- **process: admission review** — <span class="hl-link" tabindex="0" data-code="skip-report.yaml" data-lines="18">실제 어드미션 요청 중에 평가가 이루어졌음을 확인해 준다.</span>
+- **exceptions: exclude-skipped-deployment** — <span class="hl-link" tabindex="0" data-code="skip-report.yaml" data-lines="17">적용된 `PolicyException`을 가리킨다.</span>
 
 `PolicyException`은 어드미션 모드와 마찬가지로 백그라운드 모드에서도 동작하며, 다른 정책 유형인 `ImageValidatingPolicy`도 지원한다.
 
 ### 백그라운드 모드에서 ImageValidatingPolicy와 PolicyException 사용
 
-이 예시에서 `skipped-pod`라는 파드는 정책의 매칭 조건을 충족한다. default 네임스페이스에 있고 `prod: true` 레이블이 있으며, ghcr.io의 서명되지 않은 이미지를 참조한다. 따라서 이 이미지는 증명(attestation)과 서명이 없거나 유효하지 않아 백그라운드 정책 평가에서 실패해야 한다.
+이 예시에서 `skipped-pod`라는 파드는 정책의 매칭 조건을 충족한다. <span class="hl-link" tabindex="0" data-code="skipped-pod.yaml" data-lines="5-7">default 네임스페이스에 있고 `prod: true` 레이블이 있으며</span>, <span class="hl-link" tabindex="0" data-code="skipped-pod.yaml" data-lines="11">ghcr.io의 서명되지 않은 이미지를 참조한다</span>. 따라서 이 이미지는 증명(attestation)과 서명이 없거나 유효하지 않아 백그라운드 정책 평가에서 실패해야 한다.
 
-```yaml
+```yaml title="skipped-pod.yaml"
 apiVersion: v1
 kind: Pod
 metadata:
@@ -130,9 +130,9 @@ spec:
       image: 'ghcr.io/kyverno/test-verify-image:unsigned'
 ```
 
-아래 `ImageValidatingPolicy`는 어드미션 때는 실행되지 않고 백그라운드 스캔 때만 실행되도록 구성되어 있다. 대상은 `prod: true` 레이블이 있는 파드 리소스이다. 이런 리소스를 만나면 정책은 세 단계로 검증한다. 제공된 notary 인증서로 이미지 서명을 검증하고, `CycloneDX` 유형의 SBOM 증명이 있는지 확인하고, 페이로드 형식이 기대한 구조와 일치하는지 확인한다.
+아래 `ImageValidatingPolicy`는 <span class="hl-link" tabindex="0" data-code="ivpol-sample.yaml" data-lines="9-13">어드미션 때는 실행되지 않고 백그라운드 스캔 때만 실행되도록</span> 구성되어 있다. 대상은 <span class="hl-link" tabindex="0" data-code="ivpol-sample.yaml" data-lines="16-25">`prod: true` 레이블이 있는 파드 리소스</span>이다. 이런 리소스를 만나면 정책은 세 단계로 검증한다. <span class="hl-link" tabindex="0" data-code="ivpol-sample.yaml" data-lines="28-36,42-44">제공된 notary 인증서로 이미지 서명을 검증하고</span>, <span class="hl-link" tabindex="0" data-code="ivpol-sample.yaml" data-lines="37-40,45-47">`CycloneDX` 유형의 SBOM 증명이 있는지 확인하고</span>, <span class="hl-link" tabindex="0" data-code="ivpol-sample.yaml" data-lines="48-50">페이로드 형식이 기대한 구조와 일치하는지 확인한다</span>.
 
-```yaml
+```yaml title="ivpol-sample.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:
@@ -185,9 +185,9 @@ spec:
       message: sbom is not a cyclone dx sbom
 ```
 
-이 `PolicyException`은 해당 파드를 정책 적용에서 제외하도록 정의되어 있다. 예외는 CEL 표현식 `object.metadata.name == 'skipped-pod'`로 특정 리소스를 식별하고, `ivpol-sample`이라는 `ImageValidatingPolicy`에 연결된다. 리포트 컨트롤러가 이 파드를 처리할 때 예외가 적용된다는 것을 감지하므로, 이 리소스에는 이미지 검증 규칙이 하나도 실행되지 않는다.
+이 `PolicyException`은 해당 파드를 정책 적용에서 제외하도록 정의되어 있다. 예외는 <span class="hl-link" tabindex="0" data-code="check-name.yaml" data-lines="9-11">CEL 표현식 `object.metadata.name == 'skipped-pod'`로 특정 리소스를 식별하고</span>, <span class="hl-link" tabindex="0" data-code="check-name.yaml" data-lines="6-8">`ivpol-sample`이라는 `ImageValidatingPolicy`에 연결된다</span>. 리포트 컨트롤러가 이 파드를 처리할 때 예외가 적용된다는 것을 감지하므로, 이 리소스에는 이미지 검증 규칙이 하나도 실행되지 않는다.
 
-```yaml
+```yaml title="check-name.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: PolicyException
 metadata:
@@ -203,7 +203,7 @@ spec:
 
 Kyverno 리포트 컨트롤러는 [백그라운드 스캔](/docs/guides/reports)으로 이 파드를 평가한다. 리소스가 `PolicyException`과 일치하는 것을 감지하면 Kyverno가 그 판단을 `PolicyReport`에 기록한다.
 
-```yaml
+```yaml title="skipped-pod-report.yaml"
 apiVersion: wgpolicyk8s.io/v1alpha2
 kind: PolicyReport
 metadata:
@@ -239,9 +239,9 @@ summary:
 
 #### PolicyException의 PolicyReport 결과 해석
 
-- **result: skip** — 규칙이 적용되지 않았음을 나타낸다.
-- **process: background scan** — 백그라운드 정책 점검 중에 평가가 이루어졌음을 확인해 준다.
-- **exceptions: check-name** — 적용된 `PolicyException`을 가리킨다.
+- **result: skip** — <span class="hl-link" tabindex="0" data-code="skipped-pod-report.yaml" data-lines="14">규칙이 적용되지 않았음을 나타낸다.</span>
+- **process: background scan** — <span class="hl-link" tabindex="0" data-code="skipped-pod-report.yaml" data-lines="18">백그라운드 정책 점검 중에 평가가 이루어졌음을 확인해 준다.</span>
+- **exceptions: check-name** — <span class="hl-link" tabindex="0" data-code="skipped-pod-report.yaml" data-lines="17">적용된 `PolicyException`을 가리킨다.</span>
 
 이렇게 하면 핵심 정책 로직을 수정하지 않고도 선언적으로 세밀하게 예외를 둘 수 있다. 보안 태세는 견고하게 유지하면서 예외적인 경우에 유연하게 대응할 수 있다.
 
@@ -249,9 +249,9 @@ summary:
 
 `PolicyException`으로 `GeneratingPolicy`를 선택적으로 건너뛸 수도 있다. 기본 정책을 바꾸지 않고 특정 네임스페이스나 특정 레이블이 있는 리소스처럼 일부 상황에서 리소스 생성을 막고 싶을 때 유용하다.
 
-다음 `GeneratingPolicy`는 새로 만든 모든 네임스페이스(Namespace)에 `zk-kafka-address`라는 컨피그맵(ConfigMap)을 자동으로 생성하도록 설계되었다.
+다음 `GeneratingPolicy`는 <span class="hl-link" tabindex="0" data-code="generate-configmap.yaml" data-lines="6-11">새로 만든 모든 네임스페이스(Namespace)에</span> <span class="hl-link" tabindex="0" data-code="generate-configmap.yaml" data-lines="19-23,31-32">`zk-kafka-address`라는 컨피그맵(ConfigMap)을 자동으로 생성하도록</span> 설계되었다.
 
-```yaml
+```yaml title="generate-configmap.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -286,9 +286,9 @@ spec:
     - expression: generator.Apply(variables.nsName, variables.configmap)
 ```
 
-특정 네임스페이스(예: "testing" 네임스페이스)에 이 `ConfigMap`이 생성되지 않게 하려면 `PolicyException`을 정의한다. 이 예외는 CEL 표현식으로 이름이 `testing`인 네임스페이스를 매칭하고, 해당 네임스페이스에서는 `generate-configmap` 정책을 건너뛴다.
+특정 네임스페이스(예: "testing" 네임스페이스)에 이 `ConfigMap`이 생성되지 않게 하려면 `PolicyException`을 정의한다. 이 예외는 <span class="hl-link" tabindex="0" data-code="exclude-namespace-by-name.yaml" data-lines="9-11">CEL 표현식으로 이름이 `testing`인 네임스페이스를 매칭하고</span>, 해당 네임스페이스에서는 <span class="hl-link" tabindex="0" data-code="exclude-namespace-by-name.yaml" data-lines="6-8">`generate-configmap` 정책을 건너뛴다</span>.
 
-```yaml
+```yaml title="exclude-namespace-by-name.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: PolicyException
 metadata:
@@ -345,7 +345,7 @@ metadata:
 
 네임스페이스가 생성되면 Kyverno 어드미션 컨트롤러는 `UpdateRequest`라는 중간 오브젝트를 만들어 작업을 큐에 넣는다. 이후 백그라운드 컨트롤러가 이 `UpdateRequest`를 처리해 최종 리소스를 생성한다. 컨트롤러는 `production`과 `staging` 네임스페이스에는 `ConfigMap`을 정상적으로 만든다. 그러나 일치하는 `PolicyException`이 있으므로 `testing` 네임스페이스는 생성 단계를 건너뛴다. 이어서 리포트 컨트롤러가 이벤트마다 `ClusterPolicyReport`를 만든다. `production`과 `staging`에서는 생성에 성공해 `pass` 결과를, `testing`에서는 적용된 예외를 정확히 가리키는 `skip` 결과를 보여 준다.
 
-```yaml
+```yaml title="namespace-reports.yaml"
 apiVersion: wgpolicyk8s.io/v1alpha2
 kind: ClusterPolicyReport
 metadata:
@@ -531,9 +531,9 @@ spec:
 
 #### PolicyReport 결과 해석
 
-- `production` 네임스페이스의 리포트는 `result: pass`를 보여 주며, `properties.generated-resources` 필드로 `ConfigMap`이 정상적으로 생성되었음을 확인할 수 있다.
+- `production` 네임스페이스의 리포트는 <span class="hl-link" tabindex="0" data-code="namespace-reports.yaml" data-lines="14,16">`result: pass`를 보여 주며, `properties.generated-resources` 필드로</span> `ConfigMap`이 정상적으로 생성되었음을 확인할 수 있다.
 
-- 반대로 `testing` 네임스페이스의 리포트는 `result: skip`을 보여 준다. `properties.exceptions` 필드가 `exclude-namespace-by-name`을 가리키므로 `PolicyException`이 정상 적용되어 리소스가 생성되지 않았음을 알 수 있다.
+- 반대로 `testing` 네임스페이스의 리포트는 <span class="hl-link" tabindex="0" data-code="namespace-reports.yaml" data-lines="45">`result: skip`을 보여 준다</span>. <span class="hl-link" tabindex="0" data-code="namespace-reports.yaml" data-lines="43">`properties.exceptions` 필드가 `exclude-namespace-by-name`을 가리키므로</span> `PolicyException`이 정상 적용되어 리소스가 생성되지 않았음을 알 수 있다.
 
 <a id="compensating-controls"></a>
 
@@ -545,9 +545,9 @@ spec:
 보상 통제는 `ValidatingPolicy` 또는 `NamespacedValidatingPolicy`를 참조하는 예외에서만 평가된다. 다른 정책 kind에서는 이 필드가 무시되며, 예외를 생성하거나 업데이트할 때 Kyverno가 경고를 반환한다.
 :::
 
-다음 `ValidatingPolicy`는 파드의 모든 컨테이너가 루트가 아닌 사용자로 실행되도록 요구한다.
+다음 `ValidatingPolicy`는 파드의 <span class="hl-link" tabindex="0" data-code="disallow-root-user.yaml" data-lines="14-22">모든 컨테이너가 루트가 아닌 사용자로 실행되도록 요구한다</span>.
 
-```yaml
+```yaml title="disallow-root-user.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -572,9 +572,9 @@ spec:
         securityContext.runAsNonRoot to true.
 ```
 
-아래 `PolicyException`은 이름이 `legacy-app`으로 시작하는 파드가 루트로 실행되도록 허용한다. 이 예외는 파드에 보안 티켓 어노테이션이 있고 엄격한 네트워크 격리를 선언한 경우에만 허용된다.
+아래 `PolicyException`은 <span class="hl-link" tabindex="0" data-code="allow-root-legacy-app.yaml" data-lines="11-13">이름이 `legacy-app`으로 시작하는 파드</span>가 루트로 실행되도록 허용한다. 이 예외는 <span class="hl-link" tabindex="0" data-code="allow-root-legacy-app.yaml" data-lines="16-19">파드에 보안 티켓 어노테이션이 있고</span> <span class="hl-link" tabindex="0" data-code="allow-root-legacy-app.yaml" data-lines="20-23">엄격한 네트워크 격리를 선언한 경우</span>에만 허용된다.
 
-```yaml
+```yaml title="allow-root-legacy-app.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: PolicyException
 metadata:

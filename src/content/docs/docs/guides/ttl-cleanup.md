@@ -18,9 +18,9 @@ TTL 레이블에는 다음 값 중 하나를 지정할 수 있다.
 
 인식할 수 없는 형식은 경고를 발생시킨다. 정리 컨트롤러에는 레이블이 지정된 리소스를 감시(watch)하고 삭제할 권한이 있어야 한다. [권한 사용자 지정](/docs/installation/customization#customizing-permissions)을 참고한다.
 
-다음 파드는 2분 뒤에 삭제된다.
+다음 파드는 <span class="hl-link" tabindex="0" data-code="temporary-job.yaml" data-lines="6">2분 뒤에</span> 삭제된다.
 
-```yaml
+```yaml title="temporary-job.yaml"
 apiVersion: v1
 kind: Pod
 metadata:
@@ -40,9 +40,9 @@ spec:
 
 ## 삭제 전파
 
-`cleanup.kyverno.io/propagation-policy` 어노테이션을 설정하면 종속 리소스의 처리 방식을 제어한다.
+<span class="hl-link" tabindex="0" data-code="propagation-policy.yaml" data-lines="5">`cleanup.kyverno.io/propagation-policy` 어노테이션</span>을 설정하면 종속 리소스의 처리 방식을 제어한다.
 
-```yaml
+```yaml title="propagation-policy.yaml"
 metadata:
   labels:
     cleanup.kyverno.io/ttl: 2m

@@ -51,9 +51,9 @@ spec:
 
 **CEL 기반 정책 구조**
 
-Kyverno의 CEL 기반 정책은 정책마다 검증, 변경, 생성, 정리 중 하나의 동작만 맡는 별도 유형으로 정의된다. CEL 기반 정책 하나에는 같은 유형의 동작을 순서대로 나열할 수 있다(예: `spec.validations`).
+Kyverno의 CEL 기반 정책은 정책마다 검증, 변경, 생성, 정리 중 하나의 동작만 맡는 별도 유형으로 정의된다. CEL 기반 정책 하나에는 <span class="hl-link" tabindex="0" data-code="require-app-version-labels.yaml" data-lines="19-24">같은 유형의 동작을 순서대로 나열할 수 있다(예: `spec.validations`)</span>.
 
-```yaml
+```yaml title="require-app-version-labels.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -167,9 +167,9 @@ validate:
 
 **ValidatingPolicy:**
 
-`deny` 규칙을 CEL 표현식으로 바꿀 때는 논리가 반전된다.
+<span class="hl-link" tabindex="0" data-code="deny-to-cel.yaml" data-lines="4">`deny` 규칙을 CEL 표현식으로 바꿀 때는 논리가 반전된다.</span>
 
-```yaml
+```yaml title="deny-to-cel.yaml"
 validate:
   cel:
     expressions:
@@ -357,20 +357,20 @@ kubectl get events -n <kyverno-namespace> --field-selector reason=LegacyPolicyPr
 **CEL 표현식 오류**
 
 **오류:** `unknown field 'foo'`
-**해결:** `has()` 또는 `?`로 필드 존재 여부를 확인한다.
+**해결:** <span class="hl-link" tabindex="0" data-code="has-check.yaml" data-lines="1">`has()`</span> 또는 <span class="hl-link" tabindex="0" data-code="optional-field.yaml" data-lines="1">`?`</span>로 필드 존재 여부를 확인한다.
 
-```yaml
+```yaml title="has-check.yaml"
 expression: "has(object.metadata.labels) && has(object.metadata.labels.foo) && object.metadata.labels.foo == 'value'"
 ```
 
-```yaml
+```yaml title="optional-field.yaml"
 expression: "object.metadata.?labels.foo.orValue('') == 'value'"
 ```
 
 **오류:** `index out of bounds`
-**해결:** 배열에 접근하기 전에 길이를 확인한다.
+**해결:** <span class="hl-link" tabindex="0" data-code="array-bounds.yaml" data-lines="1">배열에 접근하기 전에 길이를 확인한다.</span>
 
-```yaml
+```yaml title="array-bounds.yaml"
 expression: "size(object.spec.initContainers) > 0 && object.spec.initContainers[0].image != 'bad'"
 ```
 

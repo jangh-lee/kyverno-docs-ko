@@ -49,15 +49,15 @@ Kyverno CLI를 사용하면 지속적 통합(CI) 파이프라인에서 Kyverno �
         └── restrict_image_registries.yaml
 ```
 
-저장소에는 `policies/`에 Kyverno 정책, `resources/`에 쿠버네티스 리소스 매니페스트, `tests/`에 완성된 Kyverno 테스트 케이스가 있다. 샘플 워크플로를 `.github/workflows/kyverno.yaml` 경로에 아래 내용으로 추가하면, 풀 리퀘스트가 열릴 때와 저장소에서 수동으로 트리거할 때 다음 작업을 수행한다.
+저장소에는 `policies/`에 Kyverno 정책, `resources/`에 쿠버네티스 리소스 매니페스트, `tests/`에 완성된 Kyverno 테스트 케이스가 있다. 샘플 워크플로를 `.github/workflows/kyverno.yaml` 경로에 아래 내용으로 추가하면, <span class="hl-link" tabindex="0" data-code="kyverno-policy-test.yaml" data-lines="2-4">풀 리퀘스트가 열릴 때와 저장소에서 수동으로 트리거할 때</span> 다음 작업을 수행한다.
 
-1. 저장소를 체크아웃한다.
-2. 특정 버전을 지정해 Kyverno CLI용 GitHub 액션을 다운로드한다. 이 버전을 바꾸면 Kyverno 업그레이드가 클러스터에 미칠 영향을 시뮬레이션할 수 있다. Kyverno CLI용 GitHub 액션은 [kyverno-cli-installer](https://github.com/marketplace/actions/kyverno-cli-installer)를 참고한다.
-3. Kyverno CLI 버전을 확인한다.
-4. `resources/`의 미확인 매니페스트를 `policies/`에 저장된 기존 정책으로 테스트한다.
-5. `tests/`에 저장된 사전 정의 테스트 케이스를 테스트한다. 이 케이스는 폴더별로 Kyverno 테스트 매니페스트, 정책, 리소스로 나뉘어 있다.
+1. <span class="hl-link" tabindex="0" data-code="kyverno-policy-test.yaml" data-lines="11-12">저장소를 체크아웃한다.</span>
+2. <span class="hl-link" tabindex="0" data-code="kyverno-policy-test.yaml" data-lines="13-16">특정 버전을 지정해 Kyverno CLI용 GitHub 액션을 다운로드한다.</span> 이 버전을 바꾸면 Kyverno 업그레이드가 클러스터에 미칠 영향을 시뮬레이션할 수 있다. Kyverno CLI용 GitHub 액션은 [kyverno-cli-installer](https://github.com/marketplace/actions/kyverno-cli-installer)를 참고한다.
+3. <span class="hl-link" tabindex="0" data-code="kyverno-policy-test.yaml" data-lines="17-18">Kyverno CLI 버전을 확인한다.</span>
+4. <span class="hl-link" tabindex="0" data-code="kyverno-policy-test.yaml" data-lines="19-20">`resources/`의 미확인 매니페스트를 `policies/`에 저장된 기존 정책으로 테스트한다.</span>
+5. <span class="hl-link" tabindex="0" data-code="kyverno-policy-test.yaml" data-lines="21-22">`tests/`에 저장된 사전 정의 테스트 케이스를 테스트한다.</span> 이 케이스는 폴더별로 Kyverno 테스트 매니페스트, 정책, 리소스로 나뉘어 있다.
 
-```yaml
+```yaml title="kyverno-policy-test.yaml"
 name: kyverno-policy-test
 on:
   - pull_request

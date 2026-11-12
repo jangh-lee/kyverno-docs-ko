@@ -29,7 +29,7 @@ GeneratingPolicy는 CEL을 사용하므로 ValidatingAdmissionPolicy, MutatingAd
 
 예를 들어 다음 정책은 default 네임스페이스의 이미지 풀 시크릿을 새로 만든 모든 네임스페이스(Namespace)에 자동으로 복제한다.
 
-```yaml
+```yaml title="clone-image-pull-secret.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -50,7 +50,7 @@ spec:
     - expression: generator.Apply(variables.targetNs, [variables.sourceSecret])
 ```
 
-이 정책에서는 새 네임스페이스가 만들어지면(**트리거**) Kyverno가 default 네임스페이스에서 `regcred` 시크릿(**소스**)을 가져와 새 네임스페이스에 복사본(**다운스트림** 리소스)을 만든다.
+이 정책에서는 <span class="hl-link" tabindex="0" data-code="clone-image-pull-secret.yaml" data-lines="6-11">새 네임스페이스가 만들어지면(**트리거**)</span> Kyverno가 <span class="hl-link" tabindex="0" data-code="clone-image-pull-secret.yaml" data-lines="15-16">default 네임스페이스에서 `regcred` 시크릿(**소스**)을 가져와</span> <span class="hl-link" tabindex="0" data-code="clone-image-pull-secret.yaml" data-lines="17-18">새 네임스페이스에 복사본(**다운스트림** 리소스)을 만든다</span>.
 
 ## 핵심 개념
 
@@ -80,7 +80,7 @@ GeneratingPolicy의 spec은 여러 주요 필드로 이루어진다.
 
 다음 정책은 네임스페이스가 생성되면 컨피그맵을 생성한다.
 
-```yaml
+```yaml title="zk-kafka-address-data.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -118,7 +118,7 @@ spec:
     - expression: generator.Apply(variables.nsName, variables.downstream)
 ```
 
-이 정책은 네임스페이스가 생성될 때마다 동작한다. 네임스페이스 이름을 `nsName`에 담고, 컨피그맵 오브젝트 전체를 `downstream`에 정의한다. 그다음 `generator.Apply()` 함수가 `downstream`에 정의한 컨피그맵을 대상 네임스페이스에 만든다.
+이 정책은 네임스페이스가 생성될 때마다 동작한다. <span class="hl-link" tabindex="0" data-code="zk-kafka-address-data.yaml" data-lines="16-33">네임스페이스 이름을 `nsName`에 담고, 컨피그맵 오브젝트 전체를 `downstream`에 정의한다</span>. 그다음 <span class="hl-link" tabindex="0" data-code="zk-kafka-address-data.yaml" data-lines="34-35">`generator.Apply()` 함수가 `downstream`에 정의한 컨피그맵을 대상 네임스페이스에 만든다</span>.
 
 ## YAML 템플릿
 
@@ -137,7 +137,7 @@ YAML 템플릿은 다운스트림 리소스를 YAML 중심으로 선언하는 �
 
 다음 정책은 위의 데이터 소스 예시와 같은 일을 YAML 템플릿으로 작성한 것이다.
 
-```yaml
+```yaml title="zk-kafka-address-template.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -175,10 +175,10 @@ spec:
 
 플레이스홀더는 생성 표현식과 같은 컨텍스트(`object`, `variables`, [CEL 라이브러리](/docs/policy-types/cel-libraries))에서 평가된다. 보간은 텍스트 치환이 아니라 구조 단위로 이루어진다.
 
-- 값 **전체**를 차지하는 플레이스홀더는 그대로 끼워 넣어지며, 맵과 리스트를 포함한 어떤 CEL 타입으로도 평가될 수 있다. `dyn()` 변환은 필요 없다.
-- **더 긴 문자열 안에 들어 있는** 플레이스홀더는 문자열로 보간되므로 스칼라(문자열, 숫자, 불리언)로 평가되어야 한다.
+- <span class="hl-link" tabindex="0" data-code="placeholder-types.yaml" data-lines="15">값 **전체**를 차지하는 플레이스홀더는 그대로 끼워 넣어지며</span>, 맵과 리스트를 포함한 어떤 CEL 타입으로도 평가될 수 있다. `dyn()` 변환은 필요 없다.
+- <span class="hl-link" tabindex="0" data-code="placeholder-types.yaml" data-lines="12,19">**더 긴 문자열 안에 들어 있는** 플레이스홀더는 문자열로 보간되므로</span> 스칼라(문자열, 숫자, 불리언)로 평가되어야 한다.
 
-```yaml
+```yaml title="placeholder-types.yaml"
 variables:
   - name: selector
     expression: >-
@@ -256,7 +256,7 @@ generate:
 
 다음은 `default` 네임스페이스의 시크릿을 대상 네임스페이스로 복제하는 예시이다.
 
-```yaml
+```yaml title="generate-secret.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -277,7 +277,7 @@ spec:
     - expression: generator.Apply(variables.nsName, [variables.source])
 ```
 
-이 정책은 네임스페이스가 생성될 때마다 동작한다. 트리거의 네임스페이스 이름을 `nsName`에 담고, `resource.Get()`으로 `default` 네임스페이스의 `regcred` 시크릿을 가져와 `source`에 저장한다. 그다음 `generator.Apply()`가 가져온 시크릿을 새 네임스페이스에 복사한다.
+이 정책은 네임스페이스가 생성될 때마다 동작한다. <span class="hl-link" tabindex="0" data-code="generate-secret.yaml" data-lines="13-16">트리거의 네임스페이스 이름을 `nsName`에 담고, `resource.Get()`으로 `default` 네임스페이스의 `regcred` 시크릿을 가져와 `source`에 저장한다</span>. 그다음 <span class="hl-link" tabindex="0" data-code="generate-secret.yaml" data-lines="17-18">`generator.Apply()`가 가져온 시크릿을 새 네임스페이스에 복사한다</span>.
 
 ### 여러 리소스 복제
 
@@ -316,7 +316,7 @@ GeneratingPolicy는 CEL의 리스트 처리 기능으로 forEach 방식의 로�
 
 다음 정책은 컨피그맵에 쉼표로 구분한 문자열로 저장된 기존 네임스페이스 목록 전체에 네트워크폴리시를 만든다.
 
-```yaml
+```yaml title="generate-np-foreach.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -351,13 +351,13 @@ spec:
         variables.nsList.all(ns, generator.Apply(ns, variables.downstream))
 ```
 
-이 정책은 컨피그맵이 생성될 때마다 동작한다. 컨피그맵의 data 필드에서 네임스페이스 목록을 읽어 리스트로 나눈 뒤 `nsList`에 저장하고, 네트워크폴리시 오브젝트 전체를 `downstream`에 정의한다. 이어서 `variables.nsList.all(ns, ...)`로 `nsList`의 네임스페이스를 하나씩 순회하면서 `downstream`에 정의한 네트워크폴리시를 각 네임스페이스에 생성한다.
+이 정책은 컨피그맵이 생성될 때마다 동작한다. <span class="hl-link" tabindex="0" data-code="generate-np-foreach.yaml" data-lines="13-29">컨피그맵의 data 필드에서 네임스페이스 목록을 읽어 리스트로 나눈 뒤 `nsList`에 저장하고, 네트워크폴리시 오브젝트 전체를 `downstream`에 정의한다</span>. 이어서 <span class="hl-link" tabindex="0" data-code="generate-np-foreach.yaml" data-lines="30-32">`variables.nsList.all(ns, ...)`로 `nsList`의 네임스페이스를 하나씩 순회하면서 `downstream`에 정의한 네트워크폴리시를 각 네임스페이스에 생성한다</span>.
 
 반복하면서 이름이 서로 다른 리소스를 만들어야 할 때도 있다. 인덱스 목록을 만들면 인덱스로 동적인 이름을 구성하고 원래 목록의 항목을 참조할 수 있다.
 
 다음 정책은 컨피그맵에 정의된 각 네임스페이스에 이름이 서로 다른 네트워크폴리시(예: np-0, np-1)를 만든다.
 
-```yaml
+```yaml title="generate-np-indexed.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -396,9 +396,9 @@ spec:
 
 이 정책은 변수 두 개를 정의한다.
 
-1. `nsList`: 트리거 컨피그맵의 namespaces 키를 읽어 쉼표로 구분된 문자열을 이름 목록(예: ['ns1', 'ns2', 'ns3'])으로 나눈다.
+1. `nsList`: <span class="hl-link" tabindex="0" data-code="generate-np-indexed.yaml" data-lines="13-15">트리거 컨피그맵의 namespaces 키를 읽어 쉼표로 구분된 문자열을 이름 목록(예: ['ns1', 'ns2', 'ns3'])으로 나눈다</span>.
 
-2. `indexed`: nsList 각 항목의 숫자 인덱스를 담은 새 리스트를 만든다. `nsList`가 ['ns1', 'ns2', 'ns3']이면 indexed는 [0, 1, 2]가 된다. 이렇게 하면 네임스페이스마다 겹치지 않는 고정된 번호를 얻는다.
+2. `indexed`: <span class="hl-link" tabindex="0" data-code="generate-np-indexed.yaml" data-lines="16-19">nsList 각 항목의 숫자 인덱스를 담은 새 리스트를 만든다</span>. `nsList`가 ['ns1', 'ns2', 'ns3']이면 indexed는 [0, 1, 2]가 된다. 이렇게 하면 네임스페이스마다 겹치지 않는 고정된 번호를 얻는다.
 
 이어서 `generate` 블록이 하는 일은 다음과 같다.
 
@@ -618,7 +618,7 @@ GeneratingPolicy는 기본적으로 규칙에 맞는 리소스의 `CREATE`, `UPD
 
 다음 정책은 새 네임스페이스**와** 기존 네임스페이스 모두에 시크릿을 복제한다.
 
-```yaml
+```yaml title="generate-secrets-existing.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: GeneratingPolicy
 metadata:
@@ -642,7 +642,7 @@ spec:
     - expression: generator.Apply(variables.nsName, [variables.source])
 ```
 
-기존 네임스페이스가 예를 들어 10개 있는 클러스터에 이 정책을 적용하면, `generateExisting.enabled: true` 덕분에 Kyverno가 그 10개 네임스페이스에 `regcred` 시크릿 복사본을 즉시 만든다. 이 필드가 없으면 정책을 적용한 뒤에 만든 네임스페이스에만 시크릿이 생성된다.
+기존 네임스페이스가 예를 들어 10개 있는 클러스터에 이 정책을 적용하면, <span class="hl-link" tabindex="0" data-code="generate-secrets-existing.yaml" data-lines="7-8">`generateExisting.enabled: true` 덕분에</span> Kyverno가 그 10개 네임스페이스에 `regcred` 시크릿 복사본을 즉시 만든다. 이 필드가 없으면 정책을 적용한 뒤에 만든 네임스페이스에만 시크릿이 생성된다.
 
 ## Kyverno CEL 라이브러리
 

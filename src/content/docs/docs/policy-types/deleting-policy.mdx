@@ -110,10 +110,6 @@ spec:
 
 정책은 cron 일정에 따라 주기적으로 실행되고, CEL 표현식 조건으로 표시된 파드만 정리한다. <span class="hl-link" tabindex="0" data-code="cleanup-old-test-pods.yaml" data-lines="20-22">변수(isEphemeral)도 하나 정의해 두었는데</span>, 임시(ephemeral) 파드만 삭제하는 식으로 삭제 로직을 더 세밀하게 다듬을 때 쓸 수 있다.
 
-:::tip[팁]
-밑줄 친 설명에 마우스를 올리거나 클릭하면 아래 코드에서 관련된 줄이 강조된다.
-:::
-
 ```yaml title="cleanup-old-test-pods.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: DeletingPolicy

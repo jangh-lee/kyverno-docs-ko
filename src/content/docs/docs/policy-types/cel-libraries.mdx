@@ -24,9 +24,9 @@ Kyverno는 Kubernetes의 CEL 환경에 라이브러리를 더해 복잡한 정�
 | `resource.List("v1", "services", "default").items.map(s, s.metadata.name).isSorted()`                                       | `default` 네임스페이스의 서비스 이름이 알파벳순으로 정렬되어 있는지 확인한다         |
 | `resource.List("v1", "services", object.metadata.namespace).items.map(s, s.metadata.name).isSorted()`                       | `object.metadata.namespace`로 현재 리소스의 네임스페이스를 동적으로 지정한다          |
 
-아래 예시 정책에서는 `resource.Get()`으로 컨피그맵을 가져와 정책 평가 로직에 사용한다.
+아래 예시 정책에서는 <span class="hl-link" tabindex="0" data-code="restrict-image-registries.yaml" data-lines="23-25">`resource.Get()`으로 컨피그맵을 가져와</span> 정책 평가 로직에 사용한다.
 
-```yaml
+```yaml title="restrict-image-registries.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -59,9 +59,9 @@ spec:
       messageExpression: '"image must be from registry: " + string(variables.allowedRegistry)'
 ```
 
-다음 예시 정책은 `resource.Post()`로 쿠버네티스 `SubjectAccessReview` API를 호출해 실시간 접근 검사를 수행한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="check-subjectaccessreview.yaml" data-lines="30-32">`resource.Post()`로 쿠버네티스 `SubjectAccessReview` API를 호출해</span> 실시간 접근 검사를 수행한다.
 
-```yaml
+```yaml title="check-subjectaccessreview.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -101,9 +101,9 @@ spec:
         User is not authorized.
 ```
 
-다음 예시 정책은 `resource.List()`로 기존 인그레스(Ingress) 리소스를 모두 가져와, 현재 인그레스가 클러스터 전체에서 HTTP 경로를 중복시키지 않는지 확인한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="unique-ingress-path.yaml" data-lines="16-22">`resource.List()`로 기존 인그레스(Ingress) 리소스를 모두 가져와</span>, <span class="hl-link" tabindex="0" data-code="unique-ingress-path.yaml" data-lines="23-50">현재 인그레스가 클러스터 전체에서 HTTP 경로를 중복시키지 않는지</span> 확인한다.
 
-```yaml
+```yaml title="unique-ingress-path.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -228,9 +228,9 @@ HTTPS 엔드포인트가 프라이빗 CA로 서명한 인증서를 쓴다면, `h
 
 번들은 `-----BEGIN CERTIFICATE-----` 블록을 하나 이상 담은 PEM 문자열이어야 한다. 비어 있지 않은 번들은 해당 클라이언트의 시스템 루트 풀을 대체하므로, 대상 엔드포인트에 필요한 CA를 모두 포함해야 한다. 빈 문자열을 넘기면 Kyverno의 기본 HTTP 클라이언트와 시스템 신뢰 저장소를 사용한다.
 
-다음 예시는 들어온 파드와 같은 네임스페이스의 컨피그맵에서 CA 번들을 읽어 내부 HTTPS 서비스를 호출한다. Kyverno의 서비스어카운트(ServiceAccount)에는 참조하는 네임스페이스의 컨피그맵을 `get`할 권한이 있어야 한다.
+다음 예시는 들어온 파드와 같은 네임스페이스의 <span class="hl-link" tabindex="0" data-code="vpol-http-get-with-ca.yaml" data-lines="15-17">컨피그맵에서 CA 번들을 읽어</span> <span class="hl-link" tabindex="0" data-code="vpol-http-get-with-ca.yaml" data-lines="18-20">내부 HTTPS 서비스를 호출</span>한다. Kyverno의 서비스어카운트(ServiceAccount)에는 참조하는 네임스페이스의 컨피그맵을 `get`할 권한이 있어야 한다.
 
-```yaml
+```yaml title="vpol-http-get-with-ca.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -284,9 +284,9 @@ Kyverno의 HTTP 보안 강화 설정은 `http.Get()`, `http.Post()`, `http.Clien
 | `parseServiceAccount(request.userInfo.username).Name.startsWith("team-")`     | 서비스어카운트 이름 규칙을 강제한다                     |
 | `parseServiceAccount(request.userInfo.username).Namespace in ["dev", "prod"]` | 특정 네임스페이스에만 접근을 허용한다                   |
 
-다음 예시 정책은 `kube-system` 네임스페이스에서 `replicaset-controller`, `deployment-controller`, `daemonset-controller` 같은 이름을 가진 서비스어카운트만 파드를 만들 수 있게 한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="restrict-pod-creation.yaml" data-lines="18-19">`kube-system` 네임스페이스에서</span> <span class="hl-link" tabindex="0" data-code="restrict-pod-creation.yaml" data-lines="20-21">`replicaset-controller`, `deployment-controller`, `daemonset-controller` 같은 이름을 가진 서비스어카운트만</span> 파드를 만들 수 있게 한다.
 
-```yaml
+```yaml title="restrict-pod-creation.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -410,9 +410,9 @@ spec:
 
 `image.GetMetadata()` 함수는 OCI 이미지의 핵심 메타데이터를 추출하므로 다양한 속성을 기준으로 검증할 수 있다.
 
-다음 예시 정책은 파드 이미지에 메타데이터가 있고, amd64이며, 매니페스트 스키마 버전 2를 쓰는지 확인한다.
+다음 예시 정책은 <span class="hl-link" tabindex="0" data-code="check-image-details.yaml" data-lines="22-24">파드 이미지에 메타데이터가 있고</span>, <span class="hl-link" tabindex="0" data-code="check-image-details.yaml" data-lines="26-28">amd64이며</span>, <span class="hl-link" tabindex="0" data-code="check-image-details.yaml" data-lines="30-32">매니페스트 스키마 버전 2를 쓰는지</span> 확인한다.
 
-```yaml
+```yaml title="check-image-details.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -470,9 +470,9 @@ spec:
     refreshInterval: 1h
 ```
 
-다음 정책은 특정 디플로이먼트가 있어야만 파드 생성을 허용한다.
+다음 정책은 <span class="hl-link" tabindex="0" data-code="vpol-apicall-correct.yaml" data-lines="12-15">특정 디플로이먼트가 있어야만</span> <span class="hl-link" tabindex="0" data-code="vpol-apicall-correct.yaml" data-lines="16-20">파드 생성을 허용한다</span>.
 
-```yaml
+```yaml title="vpol-apicall-correct.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -882,9 +882,9 @@ Kyverno CEL 실행 환경에는 시간과 관련된 함수가 몇 가지 들어 
 | `time.toCron(timestamp("2025-01-02T15:30:00Z"))`                   | 타임스탬프를 cron 형식으로 변환한다(`"30 15 2 1 4"` 반환)    |
 | `time.now() + duration("7d")`                                      | 7일 뒤 타임스탬프를 가져온다                                 |
 
-다음 삭제 정책은 생성된 지 24시간이 지난 정책 예외를 삭제하며, 10분마다 평가된다.
+다음 삭제 정책은 <span class="hl-link" tabindex="0" data-code="delete-exceptions.yaml" data-lines="7-8">생성된 지 24시간이 지난</span> 정책 예외를 삭제하며, <span class="hl-link" tabindex="0" data-code="delete-exceptions.yaml" data-lines="17">10분마다 평가된다</span>.
 
-```yaml
+```yaml title="delete-exceptions.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: DeletingPolicy
 metadata:

@@ -56,9 +56,9 @@ spec:
 
 ### evaluation
 
-`spec.evaluation` 필드는 정책을 어떻게 적용하고 페이로드를 어떻게 처리할지 정한다. 정책의 어드미션 요청 처리와 백그라운드 처리를 켜거나 끌 수 있고, 페이로드를 JSON으로 처리할지 쿠버네티스 리소스로 처리할지도 여기서 정한다.
+`spec.evaluation` 필드는 정책을 어떻게 적용하고 페이로드를 어떻게 처리할지 정한다. <span class="hl-link" tabindex="0" data-code="evaluation-sample.yaml" data-lines="7-10">정책의 어드미션 요청 처리와 백그라운드 처리를 켜거나 끌 수 있고</span>, <span class="hl-link" tabindex="0" data-code="evaluation-sample.yaml" data-lines="11">페이로드를 JSON으로 처리할지 쿠버네티스 리소스로 처리할지</span>도 여기서 정한다.
 
-```yaml
+```yaml title="evaluation-sample.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -81,7 +81,7 @@ Kubernetes가 아닌 페이로드에는 `mode`를 `JSON`으로 설정한다.
 
 `spec.webhookConfiguration` 필드는 Kyverno 어드미션 컨트롤러 웹훅 설정을 관리하는 속성을 정의한다.
 
-```yaml
+```yaml title="webhook-timeout.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -92,7 +92,7 @@ spec:
   # ...
 ```
 
-위 정책은 `webhookConfiguration.timeoutSeconds`를 `15`로 설정했다. 어드미션 요청이 정책 평가를 기다리는 시간이다. 기본값은 `10`초이고 설정 가능한 범위는 `1`~`30`초이다. 이 시간이 지나면 실패 정책(failurePolicy)에 따라 요청이 실패하거나 평가 결과가 무시될 수 있다. Kyverno는 이 설정을 생성되는 `ValidatingWebhookConfiguration`에 반영한다.
+위 정책은 <span class="hl-link" tabindex="0" data-code="webhook-timeout.yaml" data-lines="6-7">`webhookConfiguration.timeoutSeconds`를 `15`로 설정했다</span>. 어드미션 요청이 정책 평가를 기다리는 시간이다. 기본값은 `10`초이고 설정 가능한 범위는 `1`~`30`초이다. 이 시간이 지나면 실패 정책(failurePolicy)에 따라 요청이 실패하거나 평가 결과가 무시될 수 있다. Kyverno는 이 설정을 생성되는 `ValidatingWebhookConfiguration`에 반영한다.
 
 자세한 내용은 [API 레퍼런스](https://htmlpreview.github.io/?https://github.com/kyverno/kyverno/blob/main/docs/user/crd/index.html#policies.kyverno.io/v1.WebhookConfiguration)를 참고한다.
 
@@ -106,9 +106,9 @@ spec:
 정책을 참조하는 `PolicyException`이 [보상 통제](/docs/guides/exceptions#compensating-controls)를 정의한 경우에도 Kyverno는 `ValidatingAdmissionPolicy`를 만들지 않는다. API 서버가 보상 통제를 평가할 수 없기 때문이다.
 :::
 
-다음은 `ValidatingPolicy` 선언에서 deployments, jobs, cronjobs, statefulsets용 정책을 생성하는 예시이다.
+다음은 `ValidatingPolicy` 선언에서 <span class="hl-link" tabindex="0" data-code="autogen-pod-controllers.yaml" data-lines="8-12">deployments, jobs, cronjobs, statefulsets용 정책을 생성하는</span> 예시이다.
 
-```yaml
+```yaml title="autogen-pod-controllers.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -123,9 +123,9 @@ spec:
         - statefulsets
 ```
 
-다음은 `ValidatingPolicy` 선언에서 `ValidatingAdmissionPolicy`를 생성하는 예시이다.
+다음은 `ValidatingPolicy` 선언에서 <span class="hl-link" tabindex="0" data-code="autogen-vap.yaml" data-lines="6-8">`ValidatingAdmissionPolicy`를 생성하는</span> 예시이다.
 
-```yaml
+```yaml title="autogen-vap.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -151,7 +151,7 @@ ValidatingPolicy에는 클러스터 범위 버전과 네임스페이스 범위 �
 
 ### NamespacedValidatingPolicy 예시
 
-```yaml
+```yaml title="check-deployment-replicas.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: NamespacedValidatingPolicy
 metadata:
@@ -171,7 +171,7 @@ spec:
       expression: 'object.spec.replicas >= 2'
 ```
 
-`NamespacedValidatingPolicy`를 쓰면 네임스페이스 소유자가 cluster-admin 권한 없이도 검증 정책을 직접 관리할 수 있다. 멀티 테넌시와 보안 격리 면에서 이점이 있다.
+`NamespacedValidatingPolicy`를 쓰면 <span class="hl-link" tabindex="0" data-code="check-deployment-replicas.yaml" data-lines="2,5">네임스페이스 소유자가 cluster-admin 권한 없이도 검증 정책을 직접 관리할 수 있다</span>. 멀티 테넌시와 보안 격리 면에서 이점이 있다.
 
 ## Kyverno CEL 라이브러리
 
@@ -185,7 +185,7 @@ Kyverno는 Kubernetes의 CEL 환경에 라이브러리를 더해 복잡한 정�
 
 Kyverno ValidatingPolicy는 어떤 JSON 페이로드에도 적용할 수 있다. 다음은 Terraform 플랜에 적용해 EKS 클러스터가 퍼블릭 엔드포인트를 노출하지 않는지 확인하는 정책 예시이다.
 
-```yaml
+```yaml title="check-public-endpoint.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -221,9 +221,9 @@ spec:
 
 JSON 페이로드용 정책은 다음 순서로 작성한다.
 
-1. `spec.evaluation.mode`를 `JSON`으로 설정한다.
-2. `spec.matchConditions`에 CEL 표현식을 정의해 어떤 페이로드를 매칭할지 엔진에 알려 준다.
-3. 검증 규칙을 `spec.validations`에 정의한다.
+1. <span class="hl-link" tabindex="0" data-code="check-public-endpoint.yaml" data-lines="6-7">`spec.evaluation.mode`를 `JSON`으로 설정한다</span>.
+2. <span class="hl-link" tabindex="0" data-code="check-public-endpoint.yaml" data-lines="8-16">`spec.matchConditions`에 CEL 표현식을 정의해 어떤 페이로드를 매칭할지 엔진에 알려 준다</span>.
+3. <span class="hl-link" tabindex="0" data-code="check-public-endpoint.yaml" data-lines="17-31">검증 규칙을 `spec.validations`에 정의한다</span>.
 
 JSON 정책은 [Kyverno CLI](/docs/subprojects/kyverno-cli)로 평가한다.
 
@@ -237,13 +237,13 @@ Kyverno는 ValidatingPolicy 규칙에 필드를 추가로 제공해 PolicyReport
 
 ### auditAnnotations로 사용자 정의 데이터 추가
 
-auditAnnotations 필드를 쓰면 PolicyReport에 저장되는 결과에 사용자 정의 키-값 데이터를 붙일 수 있다. 값은 고정 문자열이어도 되고, [CEL(Common Expression Language)](/docs/policy-types/cel-libraries/)로 계산하는 동적 표현식이어도 된다.
+auditAnnotations 필드를 쓰면 PolicyReport에 저장되는 결과에 <span class="hl-link" tabindex="0" data-code="audit-annotations.yaml" data-lines="6-8">사용자 정의 키-값 데이터를 붙일 수 있다</span>. 값은 고정 문자열이어도 되고, [CEL(Common Expression Language)](/docs/policy-types/cel-libraries/)로 계산하는 동적 표현식이어도 된다.
 
 심각도, 담당 팀, 리소스별 값 같은 메타데이터를 넣어 두면 PolicyReport를 읽는 쪽이 위반 사항을 이해하고 조치하기 쉬워진다.
 
 **정책 예시:**
 
-```yaml
+```yaml title="audit-annotations.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:
@@ -271,7 +271,7 @@ spec:
 
 ### messageExpression으로 동적 메시지 생성
 
-message 필드는 고정된 실패 메시지를 제공한다. messageExpression을 쓰면 CEL 표현식으로 메시지를 동적으로 만들 수 있어서, 실패 원인을 더 구체적으로 설명할 수 있다.
+<span class="hl-link" tabindex="0" data-code="message-expression.yaml" data-lines="23">message 필드는 고정된 실패 메시지를 제공한다</span>. <span class="hl-link" tabindex="0" data-code="message-expression.yaml" data-lines="21-22">messageExpression을 쓰면 CEL 표현식으로 메시지를 동적으로 만들 수 있어서</span>, 실패 원인을 더 구체적으로 설명할 수 있다.
 
 message와 messageExpression을 둘 다 정의하면 messageExpression이 우선한다.
 
@@ -281,7 +281,7 @@ message와 messageExpression을 둘 다 정의하면 messageExpression이 우선
 
 **정책 예시:**
 
-```yaml
+```yaml title="message-expression.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ValidatingPolicy
 metadata:

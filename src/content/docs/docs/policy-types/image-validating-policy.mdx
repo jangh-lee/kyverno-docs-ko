@@ -21,9 +21,9 @@ Kyverno `ImageValidatingPolicy`는 컨테이너 이미지 서명과 증명(attes
 
 `Kubernetes` 리소스를 평가할 때는 파드와 파드 템플릿의 이미지를 자동으로 추출해 처리한다. 사용자 정의 리소스나 `JSON` 페이로드는 `images` 필드에 CEL 표현식을 선언해 페이로드에서 이미지를 추출한다.
 
-예를 들어 아래 정책은 `imageReference` 필드에 지정된 이미지를 처리한다.
+예를 들어 아래 정책은 <span class="hl-link" tabindex="0" data-code="sample-images.yaml" data-lines="10">`imageReference` 필드에 지정된 이미지를</span> 처리한다.
 
-```yaml
+```yaml title="sample-images.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:
@@ -39,9 +39,9 @@ spec:
 
 ### matchImageReferences
 
-`spec.matchImageReferences` 필드는 컨테이너 이미지를 매칭하는 규칙을 정의한다. 정책이 어떤 이미지에 적용될지를 glob 패턴이나 CEL 표현식으로 지정할 수 있다.
+`spec.matchImageReferences` 필드는 컨테이너 이미지를 매칭하는 규칙을 정의한다. 정책이 어떤 이미지에 적용될지를 <span class="hl-link" tabindex="0" data-code="check-images-refs.yaml" data-lines="7">glob 패턴</span>이나 <span class="hl-link" tabindex="0" data-code="check-images-refs.yaml" data-lines="8">CEL 표현식</span>으로 지정할 수 있다.
 
-```yaml
+```yaml title="check-images-refs.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:
@@ -57,9 +57,9 @@ spec:
 
 `attestors` 필드는 키나 인증서 같은 신뢰할 수 있는 서명 주체를 선언한다.
 
-**Cosign attestor:** 이미지 검증에 공개 키, 키리스(keyless) 서명, 투명성 로그, 인증서, TUF 기반 메타데이터를 사용한다.
+**Cosign attestor:** 이미지 검증에 <span class="hl-link" tabindex="0" data-code="cosign-attestor.yaml" data-lines="19-27">공개 키</span>, <span class="hl-link" tabindex="0" data-code="cosign-attestor.yaml" data-lines="29-41">키리스(keyless) 서명</span>, <span class="hl-link" tabindex="0" data-code="cosign-attestor.yaml" data-lines="43-59">투명성 로그</span>, <span class="hl-link" tabindex="0" data-code="cosign-attestor.yaml" data-lines="61-73">인증서</span>, <span class="hl-link" tabindex="0" data-code="cosign-attestor.yaml" data-lines="81-86">TUF 기반 메타데이터</span>를 사용한다.
 
-```yaml
+```yaml title="cosign-attestor.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:
@@ -228,9 +228,9 @@ spec:
 
 ### validationConfigurations
 
-`validationConfigurations` 필드는 이미지 태그를 다이제스트로 변경할지, 이미지가 다이제스트를 쓰는지 확인할지, 정책 전반에서 이미지 검증을 강제할지를 설정한다.
+`validationConfigurations` 필드는 <span class="hl-link" tabindex="0" data-code="validation-configurations.yaml" data-lines="9">이미지 태그를 다이제스트로 변경할지</span>, <span class="hl-link" tabindex="0" data-code="validation-configurations.yaml" data-lines="11">이미지가 다이제스트를 쓰는지 확인할지</span>, <span class="hl-link" tabindex="0" data-code="validation-configurations.yaml" data-lines="10">정책 전반에서 이미지 검증을 강제할지</span>를 설정한다.
 
-```yaml
+```yaml title="validation-configurations.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:
@@ -396,7 +396,7 @@ Kyverno는 이미지 서명과 증명을 검증하는 전용 함수를 제공한
 
 다음 정책은 이 함수들을 사용하는 예시이다.
 
-```yaml
+```yaml title="verify-image-functions.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: ImageValidatingPolicy
 metadata:
@@ -437,9 +437,9 @@ spec:
 
 이 정책은 다음을 보장한다.
 
-1. 모든 이미지가 지정한 notary attestor로 서명되어 있다.
-2. 모든 이미지에 유효한 SBOM 증명이 있다.
-3. 모든 SBOM이 CycloneDX 형식이다.
+1. <span class="hl-link" tabindex="0" data-code="verify-image-functions.yaml" data-lines="27-29">모든 이미지가 지정한 notary attestor로 서명되어 있다</span>.
+2. <span class="hl-link" tabindex="0" data-code="verify-image-functions.yaml" data-lines="30-33">모든 이미지에 유효한 SBOM 증명이 있다</span>.
+3. <span class="hl-link" tabindex="0" data-code="verify-image-functions.yaml" data-lines="34-36">모든 SBOM이 CycloneDX 형식이다</span>.
 
 :::note[참고]
 `extractPayload()`가 반환하는 페이로드의 형태는 증명을 첨부한 방식에 따라 다른다. 위 정책처럼 `referrer` 증명이면 참조된 아티팩트 자체가 반환되므로 CycloneDX SBOM의 필드가 최상위에 있다. `cosign attest`로 만든 것 같은 `intoto` 증명이면 in-toto 스테이트먼트 전체가 반환되고, predicate의 필드는 `predicate` 아래에 있다. 다음은 cosign 키리스로 증명한 SBOM에 같은 검사를 적용하는 `spec` 일부이다.

@@ -66,7 +66,7 @@ spec:
 
 `spec.evaluation` 필드는 정책을 어떻게 적용하고 페이로드를 어떻게 처리할지 정한다. 정책의 어드미션 요청 처리와 기존 리소스 변경을 켜거나 끌 수 있다.
 
-```yaml
+```yaml title="evaluation-sample.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -80,9 +80,9 @@ spec:
   # ...
 ```
 
-- **`admission.enabled`**: `true`로 설정하면 어드미션 요청(CREATE, UPDATE 작업) 중에 정책을 적용한다. 리소스를 만들거나 수정하는 시점에 변경하는 주된 사용 방식이다.
+- **`admission.enabled`**: <span class="hl-link" tabindex="0" data-code="evaluation-sample.yaml" data-lines="7-8">`true`로 설정하면 어드미션 요청(CREATE, UPDATE 작업) 중에 정책을 적용한다</span>. 리소스를 만들거나 수정하는 시점에 변경하는 주된 사용 방식이다.
 
-- **`mutateExisting.enabled`**: `true`로 설정하면 백그라운드 처리로 클러스터에 이미 있는 리소스에 정책을 적용한다. 리소스를 다시 만들거나 업데이트하지 않아도 기존 리소스를 변경할 수 있다.
+- **`mutateExisting.enabled`**: <span class="hl-link" tabindex="0" data-code="evaluation-sample.yaml" data-lines="9-10">`true`로 설정하면 백그라운드 처리로 클러스터에 이미 있는 리소스에 정책을 적용한다</span>. 리소스를 다시 만들거나 업데이트하지 않아도 기존 리소스를 변경할 수 있다.
 
 - **`spec.evaluation.mode`**: `Kubernetes`(기본값) 또는 `JSON`이다. `JSON` 모드에서는 정책이 쿠버네티스 메타데이터가 필요 없는 오브젝트 루트 JSON 페이로드에 JSONPatch 표현식을 적용한다. [JSON 페이로드](#json-페이로드)를 참고한다.
 
@@ -92,7 +92,7 @@ spec:
 
 `spec.webhookConfiguration` 필드는 Kyverno 어드미션 컨트롤러 웹훅 설정을 관리하는 속성을 정의한다.
 
-```yaml
+```yaml title="add-labels-webhook.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -103,7 +103,7 @@ spec:
   # ...
 ```
 
-위 정책은 `webhookConfiguration.timeoutSeconds`를 `15`로 설정했다. 어드미션 요청이 정책 평가를 기다리는 시간이다. 기본값은 `10`초이고 설정 가능한 범위는 `1`~`30`초이다. 이 시간이 지나면 실패 정책(failure policy)에 따라 요청이 실패하거나 평가 결과가 무시된다. Kyverno는 이 설정을 생성되는 `MutatingWebhookConfiguration`에 반영한다.
+위 정책은 <span class="hl-link" tabindex="0" data-code="add-labels-webhook.yaml" data-lines="6-7">`webhookConfiguration.timeoutSeconds`를 `15`로 설정했다</span>. 어드미션 요청이 정책 평가를 기다리는 시간이다. 기본값은 `10`초이고 설정 가능한 범위는 `1`~`30`초이다. 이 시간이 지나면 실패 정책(failure policy)에 따라 요청이 실패하거나 평가 결과가 무시된다. Kyverno는 이 설정을 생성되는 `MutatingWebhookConfiguration`에 반영한다.
 
 자세한 내용은 [API 레퍼런스](https://htmlpreview.github.io/?https://github.com/kyverno/kyverno/blob/main/docs/user/crd/index.html#policies.kyverno.io/v1.WebhookConfiguration)를 참고한다.
 
@@ -115,9 +115,9 @@ spec:
 파드 컨트롤러 자동 생성과 `MutatingAdmissionPolicy` 생성은 함께 쓸 수 없다. `spec.autogen.podControllers`를 설정하면 Kyverno는 `MutatingAdmissionPolicy`를 만들지 않고, 그 이유를 정책 status에 기록한다. `MutatingAdmissionPolicy`는 쿠버네티스 API 서버가 직접 평가하기 때문에 Kyverno가 만든 파드 컨트롤러용 규칙 변형을 담을 수 없기 때문이다.
 :::
 
-다음은 `MutatingPolicy` 선언에서 deployments, jobs, cronjobs, statefulsets용 정책을 생성하는 예시이다.
+다음은 `MutatingPolicy` 선언에서 <span class="hl-link" tabindex="0" data-code="autogen-pod-controllers.yaml" data-lines="8-12">deployments, jobs, cronjobs, statefulsets용 정책을 생성하는</span> 예시이다.
 
-```yaml
+```yaml title="autogen-pod-controllers.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -132,9 +132,9 @@ spec:
         - statefulsets
 ```
 
-다음은 `MutatingPolicy` 선언에서 `MutatingAdmissionPolicy`를 생성하는 예시이다.
+다음은 `MutatingPolicy` 선언에서 <span class="hl-link" tabindex="0" data-code="autogen-map.yaml" data-lines="6-8">`MutatingAdmissionPolicy`를 생성하는</span> 예시이다.
 
-```yaml
+```yaml title="autogen-map.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -160,7 +160,7 @@ MutatingPolicy에는 클러스터 범위 버전과 네임스페이스 범위 버
 
 ### NamespacedMutatingPolicy 예시
 
-```yaml
+```yaml title="add-labels-namespaced.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: NamespacedMutatingPolicy
 metadata:
@@ -187,7 +187,7 @@ spec:
           }
 ```
 
-`NamespacedMutatingPolicy`를 쓰면 네임스페이스 소유자가 cluster-admin 권한 없이도 변경 정책을 직접 관리할 수 있다. 멀티 테넌시와 보안 격리 면에서 이점이 있다.
+`NamespacedMutatingPolicy`를 쓰면 <span class="hl-link" tabindex="0" data-code="add-labels-namespaced.yaml" data-lines="2,5">네임스페이스 소유자가 cluster-admin 권한 없이도 변경 정책을 직접 관리할 수 있다</span>. 멀티 테넌시와 보안 격리 면에서 이점이 있다.
 
 ## Kyverno CEL 라이브러리
 
@@ -372,7 +372,7 @@ Kyverno는 `map()` 같은 CEL 함수로 리소스 안의 요소를 순회하는 
 
 ### 컨테이너 순회
 
-```yaml
+```yaml title="foreach.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -400,7 +400,7 @@ spec:
           }
 ```
 
-이 예시는 CEL의 `map()` 함수로 파드의 모든 컨테이너를 순회하면서 각 컨테이너에 `allowPrivilegeEscalation: false`를 설정한 `securityContext`를 추가한다.
+이 예시는 <span class="hl-link" tabindex="0" data-code="foreach.yaml" data-lines="18">CEL의 `map()` 함수로 파드의 모든 컨테이너를 순회하면서</span> 각 컨테이너에 <span class="hl-link" tabindex="0" data-code="foreach.yaml" data-lines="20-22">`allowPrivilegeEscalation: false`를 설정한 `securityContext`를 추가한다</span>.
 
 ### 필터를 쓰는 조건부 순회
 
@@ -487,7 +487,7 @@ spec:
 
 변수 표현식에서는 `request.object`와 `request.oldObject`로 트리거 리소스의 속성에 접근할 수 있다. 변경 표현식의 `Object`는 `targetMatchConstraints`로 지정한 대상 리소스를 가리킨다. 변경 표현식에서 `request.object`나 `request.oldObject`를 쓰려면 먼저 변수로 만들어 변경 컨텍스트에 전달해야 한다.
 
-```yaml
+```yaml title="different-trigger-target.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -529,16 +529,16 @@ spec:
 
 이 예시의 동작은 다음과 같다.
 
-- **트리거**: 네임스페이스 `test-namespace`가 생성되거나 수정될 때이다.
-- **대상**: `test: enabled` 레이블이 붙은 네임스페이스의 기존 컨피그맵(ConfigMap)이 모두 변경되어 `trigger: test-namespace` 레이블이 추가된다.
+- **트리거**: <span class="hl-link" tabindex="0" data-code="different-trigger-target.yaml" data-lines="10-15">네임스페이스 `test-namespace`가 생성되거나 수정될 때</span>이다.
+- **대상**: <span class="hl-link" tabindex="0" data-code="different-trigger-target.yaml" data-lines="17-24">`test: enabled` 레이블이 붙은 네임스페이스의 기존 컨피그맵(ConfigMap)이 모두 변경되어</span> <span class="hl-link" tabindex="0" data-code="different-trigger-target.yaml" data-lines="34">`trigger: test-namespace` 레이블이 추가된다</span>.
 
 조건에 맞는 네임스페이스에 컨피그맵이 5개 있는 상태에서 트리거 네임스페이스를 수정하면 5개가 모두 변경된다.
 
 Kyverno 1.17부터는 CEL 표현식으로 변경 대상을 선택할 수 있다. 표현식은 쿠버네티스 오브젝트로 평가되어야 하므로 resource 라이브러리를 사용해야 한다. 표현식은 문자열 CEL 표현식을 받는 `targetMatchConstraints.expression` 필드에 정의한다.
 
-다음 정책은 트리거 오브젝트와 같은 네임스페이스에 있는 `test-cm-1` 컨피그맵을 대상으로 삼는다.
+다음 정책은 <span class="hl-link" tabindex="0" data-code="target-expression.yaml" data-lines="17-18">트리거 오브젝트와 같은 네임스페이스에 있는 `test-cm-1` 컨피그맵을 대상으로 삼는다</span>.
 
-```yaml
+```yaml title="target-expression.yaml"
 apiVersion: policies.kyverno.io/v1beta1
 kind: MutatingPolicy
 metadata:
@@ -596,9 +596,9 @@ spec:
 
 ### targetMatchConditions로 대상 필터링
 
-`targetMatchConditions` 필드는 변수와 대상 해석이 끝난 뒤 해석된 각 대상 리소스를 평가하는 CEL 조건을 정의한다. 대상의 상태(`object`)와 트리거 데이터(`variables`를 통해)를 모두 써서 어떤 대상을 변경할지 거를 수 있다.
+`targetMatchConditions` 필드는 <span class="hl-link" tabindex="0" data-code="filter-targets.yaml" data-lines="24-26">변수와 대상 해석이 끝난 뒤 해석된 각 대상 리소스를 평가하는 CEL 조건을 정의한다</span>. 대상의 상태(`object`)와 트리거 데이터(`variables`를 통해)를 모두 써서 어떤 대상을 변경할지 거를 수 있다.
 
-```yaml
+```yaml title="filter-targets.yaml"
 apiVersion: policies.kyverno.io/v1beta1
 kind: MutatingPolicy
 metadata:
@@ -638,13 +638,13 @@ spec:
           }
 ```
 
-이 예시에서는 디플로이먼트(Deployment) 이벤트가 발생하면 `team` 레이블이 트리거와 같은 기존 컨피그맵만 변경한다. 조건을 통과하지 못한 대상은 오류 없이 건너뛴다.
+이 예시에서는 <span class="hl-link" tabindex="0" data-code="filter-targets.yaml" data-lines="11-14">디플로이먼트(Deployment) 이벤트가 발생하면</span> <span class="hl-link" tabindex="0" data-code="filter-targets.yaml" data-lines="15-17,26">`team` 레이블이 트리거와 같은 기존 컨피그맵만 변경한다</span>. 조건을 통과하지 못한 대상은 오류 없이 건너뛴다.
 
 ### 서브리소스 변경
 
 대상 리소스 규칙에 서브리소스를 선언할 수 있다. Kyverno는 부모 리소스를 통해 대상을 해석하고, 선언된 서브리소스 엔드포인트로 변경을 저장한다. 이를 이용하면 `pods/resize` 서브리소스(쿠버네티스 1.33 이상)로 파드를 제자리에서 수직 확장하는 작업도 할 수 있다. 실행 중인 파드의 `spec.containers[*].resources`는 `/resize`로만 바꿀 수 있기 때문이다.
 
-```yaml
+```yaml title="cap-cpu-requests.yaml"
 apiVersion: policies.kyverno.io/v1beta1
 kind: MutatingPolicy
 metadata:
@@ -691,7 +691,7 @@ spec:
           ]
 ```
 
-이 정책이 기존 파드를 처리할 때는 해석된 파드를 부모 엔드포인트로 읽고, CPU 요청 변경은 `pods/resize`로 쓴다. 실행 중인 파드의 리소스를 바꾸려면 쿠버네티스가 이 경로를 요구하기 때문이다.
+이 정책이 기존 파드를 처리할 때는 <span class="hl-link" tabindex="0" data-code="cap-cpu-requests.yaml" data-lines="23">해석된 파드를 부모 엔드포인트로 읽고</span>, <span class="hl-link" tabindex="0" data-code="cap-cpu-requests.yaml" data-lines="28,41">CPU 요청 변경은 `pods/resize`로 쓴다</span>. 실행 중인 파드의 리소스를 바꾸려면 쿠버네티스가 이 경로를 요구하기 때문이다.
 
 :::caution[참고]
 백그라운드 컨트롤러에 선언한 서브리소스의 RBAC 권한(예: `pods/resize`의 `update`)이 필요하다. [권한 사용자 정의](/docs/installation/customization#customizing-permissions)를 참고한다.
@@ -705,7 +705,7 @@ spec:
 
 같은 정책 안에 변경을 여러 개 정의하면 순서대로 처리된다. 앞선 변경의 결과에 의존하는 변경도 만들 수 있다.
 
-```yaml
+```yaml title="simple-database-policy.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -747,8 +747,8 @@ spec:
 
 이 예시의 동작은 다음과 같다.
 
-1. **첫 번째 변경**: 컨테이너 중 cassandra나 mongo 이미지를 쓰는 것이 있는지 확인하고 `type: database` 레이블을 추가한다.
-2. **두 번째 변경**: `type: database` 레이블이 있는지 확인한 뒤 `backup: yes`를 추가한다.
+1. **첫 번째 변경**: <span class="hl-link" tabindex="0" data-code="simple-database-policy.yaml" data-lines="13-24">컨테이너 중 cassandra나 mongo 이미지를 쓰는 것이 있는지 확인하고 `type: database` 레이블을 추가한다</span>.
+2. **두 번째 변경**: <span class="hl-link" tabindex="0" data-code="simple-database-policy.yaml" data-lines="26-37">`type: database` 레이블이 있는지 확인한 뒤 `backup: yes`를 추가한다</span>.
 
 결과를 일관되게 유지하려면 같은 정책 안에서 변경을 의존 관계 순서대로 위에서 아래로 배치해야 한다.
 
@@ -789,9 +789,9 @@ mutations:
 
 MutatingPolicy는 쿠버네티스 리소스뿐 아니라 JSON 오브젝트도 변경할 수 있다. `spec.evaluation.mode`를 `JSON`으로 설정하고 `JSONPatch` 변경으로 설정 파일, Terraform 플랜, API 페이로드 같은 JSON 데이터를 수정한다. JSON 페이로드를 평가할 때 입력 문서와 변경 결과는 루트가 오브젝트여야 한다. 그 오브젝트 안에는 어떤 타입의 JSON 값이든 중첩할 수 있지만, 최상위가 배열, 스칼라, `null`인 문서는 지원하지 않는다.
 
-다음은 문서에 기본 리전을 추가하고, `owner/team` 키가 없으면 태그를 다는 정책 예시이다.
+다음은 <span class="hl-link" tabindex="0" data-code="add-defaults.yaml" data-lines="12-13">문서에 기본 리전을 추가하고</span>, <span class="hl-link" tabindex="0" data-code="add-defaults.yaml" data-lines="14-16">`owner/team` 키가 없으면 태그를 다는</span> 정책 예시이다.
 
-```yaml
+```yaml title="add-defaults.yaml"
 apiVersion: policies.kyverno.io/v1
 kind: MutatingPolicy
 metadata:
@@ -812,9 +812,9 @@ spec:
 
 JSON 페이로드용 정책은 다음 순서로 작성한다.
 
-1. `spec.evaluation.mode`를 `JSON`으로 설정한다.
+1. <span class="hl-link" tabindex="0" data-code="add-defaults.yaml" data-lines="6-7">`spec.evaluation.mode`를 `JSON`으로 설정한다</span>.
 2. 필요하면 `spec.matchConditions`에 CEL 표현식을 정의해 변경할 입력을 고른다.
-3. `patchType: JSONPatch`를 사용해 `spec.mutations`에 변경을 정의한다.
+3. <span class="hl-link" tabindex="0" data-code="add-defaults.yaml" data-lines="8-16">`patchType: JSONPatch`를 사용해 `spec.mutations`에 변경을 정의한다</span>.
 
 매칭 요구 사항은 평가 경로에 따라 다르다.
 
