@@ -1,0 +1,43 @@
+---
+interface Props {
+  state: string
+  version: string
+}
+const { state, version } = Astro.props
+const labels: Record<string, string> = {
+  alpha: '알파',
+  beta: '베타',
+  stable: '안정',
+  deprecated: '사용 중단 예정',
+}
+const key = (state?.toLowerCase() || 'beta') in labels ? state.toLowerCase() : 'beta'
+---
+
+<div class={`feature-state ${key}`} role="status">
+  <span class="caption">기능 상태</span>
+  <span class="badge state">{labels[key]}</span>
+  {version && <span class="badge ver">Kyverno {version}</span>}
+</div>
+
+<style>
+  .feature-state {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    margin: 1.25rem 0;
+    padding: 0.4rem 0.9rem;
+    border: 2px solid var(--c);
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+  }
+  .stable { --c: #16a34a; }
+  .beta { --c: #ea580c; }
+  .alpha { --c: #9333ea; }
+  .deprecated { --c: #6b7280; }
+  .caption { font-weight: 600; color: var(--sl-color-gray-2); }
+  .badge { padding: 0.15rem 0.6rem; border-radius: 0.35rem; font-weight: 700; color: #fff; white-space: nowrap; }
+  .state { background: var(--c); }
+  .ver { background: #2563eb; }
+</style>

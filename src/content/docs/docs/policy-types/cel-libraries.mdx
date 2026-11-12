@@ -1,0 +1,1052 @@
+---
+title: CEL 라이브러리
+description: >-
+  복잡한 정책 로직과 고급 기능을 위한 확장 CEL 함수
+sidebar:
+  order: 7
+---
+
+Kyverno는 Kubernetes의 CEL 환경에 라이브러리를 더해 복잡한 정책 로직과 고급 기능을 쓸 수 있게 합니다. 이 라이브러리는 ValidatingPolicy와 MutatingPolicy에서 모두 쓸 수 있습니다.
+
+## Resource 라이브러리
+
+**Resource 라이브러리**는 `resource.Get()`, `resource.List()` 같은 함수로 클러스터의 Kubernetes 리소스를 하나씩 또는 목록으로 가져옵니다. 새 객체를 검증하거나 변경하기 전에 기존 ConfigMap, Service, Deployment를 확인하는 것처럼 다른 리소스의 상태에 의존하는 정책을 작성할 때 유용합니다.
+
+| CEL 표현식                                                                                                                  | 용도                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `resource.Get("v1", "configmaps", "default", "clusterregistries").data["registries"]`                                       | 특정 네임스페이스의 ConfigMap 값을 가져옵니다                                           |
+| `resource.List("apps/v1", "deployments", "").items.size() > 0`                                                              | 모든 네임스페이스에 Deployment가 하나라도 있는지 확인합니다                             |
+| `resource.Post("authorization.k8s.io/v1", "subjectaccessreviews", {…})`                                                     | Kubernetes API에 대해 SubjectAccessReview(인가 검사)를 실시간으로 수행합니다            |
+| `resource.List("apps/v1", "deployments", object.metadata.namespace).items.exists(d, d.spec.replicas > 3)`                   | 같은 네임스페이스에 레플리카가 3개를 넘는 Deployment가 하나 이상 있는지 확인합니다      |
+| `resource.List("apps/v1", "deployments", object.metadata.namespace, { "env": "pod" }).items.exists(d, d.spec.replicas > 3)` | 같은 네임스페이스에서 `env:prod` 레이블 쌍이 있는 Deployment 중 레플리카가 3개를 넘는 것이 하나 이상 있는지 확인합니다 |
+| `resource.List("v1", "services", "default").items.map(s, s.metadata.name).isSorted()`                                       | `default` 네임스페이스의 Service 이름이 알파벳순으로 정렬되어 있는지 확인합니다         |
+| `resource.List("v1", "services", object.metadata.namespace).items.map(s, s.metadata.name).isSorted()`                       | `object.metadata.namespace`로 현재 리소스의 네임스페이스를 동적으로 지정합니다          |
+
+아래 예시 정책에서는 `resource.Get()`으로 ConfigMap을 가져와 정책 평가 로직에 사용합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: restrict-image-registries
+spec:
+  validationActions:
+    - Deny
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods']
+  variables:
+    - name: allContainers
+      expression: >-
+        object.spec.containers 
+        + object.spec.?initContainers.orValue([]) 
+        + object.spec.?ephemeralContainers.orValue([])
+    - name: cm
+      expression: >-
+        resource.Get("v1", "configmaps", "kube-system", "allowed-registry")
+    - name: allowedRegistry
+      expression: "variables.cm.data[?'registry'].orValue('')"
+  validations:
+    - expression: 'variables.allContainers.all(c, c.image.startsWith(variables.allowedRegistry))'
+      messageExpression: '"image must be from registry: " + string(variables.allowedRegistry)'
+```
+
+다음 예시 정책은 `resource.Post()`로 Kubernetes `SubjectAccessReview` API를 호출해 실시간 접근 검사를 수행합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: check-subjectaccessreview
+spec:
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [configmaps]
+  variables:
+    - name: res
+      expression: >-
+        {
+          "kind": dyn("SubjectAccessReview"),
+          "apiVersion": dyn("authorization.k8s.io/v1"),
+          "spec": dyn({
+            "resourceAttributes": dyn({
+              "resource": "namespaces",
+              "namespace": string(object.metadata.namespace),
+              "verb": "delete",
+              "group": ""
+            }),
+            "user": dyn(request.userInfo.username)
+          })
+        }
+    - name: subjectaccessreview
+      expression: >-
+        resource.Post("authorization.k8s.io/v1", "subjectaccessreviews", variables.res)
+  validations:
+    - expression: >-
+        has(variables.subjectaccessreview.status) && variables.subjectaccessreview.status.allowed == true
+      message: >-
+        User is not authorized.
+```
+
+다음 예시 정책은 `resource.List()`로 기존 Ingress 리소스를 모두 가져와, 현재 Ingress가 클러스터 전체에서 HTTP 경로를 중복시키지 않는지 확인합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: unique-ingress-path
+spec:
+  validationActions: [Deny]
+  evaluation:
+    background:
+      enabled: false
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['networking.k8s.io']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['ingresses']
+  variables:
+    - name: allpaths
+      expression: >-
+        resource.List("networking.k8s.io/v1", "ingresses", "" ).items
+    - name: nspath
+      expression: >-
+        resource.List("networking.k8s.io/v1", "ingresses", object.metadata.namespace ).items
+  validations:
+    - expression: >-
+        !object.spec.rules.orValue([]).exists(rule, 
+            rule.http.paths.orValue([]).exists(path, 
+              (
+                variables.allpaths.orValue([]).exists(existing_ingress, 
+                  existing_ingress.spec.rules.orValue([]).exists(existing_rule, 
+                    existing_rule.http.paths.orValue([]).exists(existing_path, 
+                      existing_path.path == path.path 
+                    )
+                  )
+                )
+                &&
+               ! variables.nspath.orValue([]).exists(existing_ingress, 
+                        existing_ingress.metadata.namespace != object.metadata.namespace &&
+
+                  existing_ingress.spec.rules.orValue([]).exists(existing_rule, 
+                    existing_rule.http.paths.orValue([]).exists(existing_path, 
+                   existing_path.path == path.path
+                    )
+                  )
+                )
+              )
+            )
+          )
+
+      message: >-
+        The root path already exists in the cluster but not in the namespace.
+```
+
+## HTTP 라이브러리
+
+**HTTP 라이브러리**는 정책 안에서 `http.Get()`, `http.Post()`, `http.Client()`로 외부 HTTP/S 엔드포인트와 통신합니다. 서드파티 시스템, 원격 설정 API, 내부 서비스를 대상으로 실시간 검증을 할 수 있고, HTTPS 엔드포인트에는 CA 번들로 보안 통신을 구성할 수 있습니다.
+
+| **CEL 표현식**                                                                                                   | **용도**                                                   |
+| ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `http.Get("https://internal.api/health").status == "ok"  `                                                       | 진행하기 전에 외부 서비스의 상태를 확인합니다              |
+| `http.Get("https://service/data").metadata.team == object.metadata.labels.team `                                 | 원격 서비스 메타데이터와 레이블이 일치하도록 강제합니다    |
+| `http.Post("https://audit.api/log", {"kind": object.kind}, {"Content-Type": "application/json"}).logged == true` | 리소스가 외부 시스템에 기록되었는지 확인합니다             |
+| `http.Get("https://certs.api/rootCA").cert == object.spec.cert`                                                  | 객체의 인증서 필드를 외부 데이터와 비교해 검증합니다       |
+| `http.Client(variables.caBundle).Get("https://internal.svc/data").status == "ok"`                                | 사용자 정의 CA 번들로 TLS 신뢰를 구성해 HTTPS 엔드포인트를 호출합니다 |
+
+다음 정책은 외부 또는 내부 HTTP(S) 엔드포인트에서 데이터를 가져와 정책 안에서 쓸 수 있게 합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: vpol-http-get
+spec:
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  variables:
+    - name: externalData
+      expression: >-
+        http.Get("http://test-api-service.default.svc.cluster.local:80")
+  validations:
+    - expression: >-
+        variables.externalData.metadata.labels.app == object.metadata.labels.app
+      messageExpression: "'only create pod with labels, variables.get.metadata.labels.app: ' + string(variables.get.metadata.labels.app)"
+```
+
+다음 예시는 페이로드를 담은 `POST` 요청을 외부 서비스에 보냅니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: vpol-http-post
+spec:
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE']
+  variables:
+    - name: response
+      expression: >-
+        http.Post(
+         "http://test-api-service.default.svc.cluster.local/",
+         {"labels": object.metadata.labels.app},{"Content-Type": "application/json"})
+  validations:
+    - expression: variables.response.received == "test"
+      messageExpression: >-
+        'External POST call did not return the expected response ' + string(variables.response.received)
+```
+
+HTTPS 엔드포인트가 프라이빗 CA로 서명한 인증서를 쓴다면, `http.Client(caBundle)`로 제공한 CA 인증서를 신뢰하는 클라이언트를 만들고 그 결과에 `Get`이나 `Post`를 호출합니다.
+
+번들은 `-----BEGIN CERTIFICATE-----` 블록을 하나 이상 담은 PEM 문자열이어야 합니다. 비어 있지 않은 번들은 해당 클라이언트의 시스템 루트 풀을 대체하므로, 대상 엔드포인트에 필요한 CA를 모두 포함해야 합니다. 빈 문자열을 넘기면 Kyverno의 기본 HTTP 클라이언트와 시스템 신뢰 저장소를 사용합니다.
+
+다음 예시는 들어온 Pod와 같은 네임스페이스의 ConfigMap에서 CA 번들을 읽어 내부 HTTPS 서비스를 호출합니다. Kyverno의 ServiceAccount에는 참조하는 네임스페이스의 ConfigMap을 `get`할 권한이 있어야 합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: vpol-http-get-with-ca
+spec:
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  variables:
+    - name: caBundle
+      expression: >-
+        resource.Get("v1", "configmaps", object.metadata.namespace, "internal-ca").data["ca.crt"]
+    - name: externalData
+      expression: >-
+        http.Client(variables.caBundle).Get("https://internal.api.svc.cluster.local/data")
+  validations:
+    - expression: >-
+        variables.externalData.metadata.labels.app == object.metadata.labels.app
+      messageExpression: >-
+        'label mismatch, expected ' + string(variables.externalData.metadata.labels.app)
+```
+
+:::note[보안 참고]
+Kyverno의 HTTP 보안 강화 설정은 `http.Get()`, `http.Post()`, `http.Client(caBundle)`로 보내는 요청에 모두 적용됩니다.
+
+- `--httpBlocklist`는 지정한 CIDR과 호스트 이름을 차단합니다.
+- `--httpAllowlist`는 요청을 지정한 URL 접두사로 제한합니다.
+- 클러스터 범위 정책에는 설정된 차단 목록과 허용 목록이 적용됩니다.
+- 네임스페이스 정책의 CEL HTTP 호출은 기본적으로 비활성화되어 있습니다. 적절한 네트워크 및 URL 제한을 갖춘 경우에만 `--allowHTTPInNamespacedPolicies`로 활성화하세요.
+
+자세한 내용은 [Kyverno 설정](/docs/installation/customization#http-calls)을 참고하세요.
+:::
+
+:::note[보안 참고]
+`Authorization` 헤더를 명시적으로 지정하지 않으면 Kyverno가 아웃바운드 HTTP 컨텍스트 요청에 범위가 제한된 ServiceAccount 토큰을 넣습니다. 서버는 이 토큰으로 TokenReview API를 사용해 HTTP 요청을 인증할 수 있습니다. 토큰은 Kubernetes API 서버에 대한 재전송 공격 위험을 줄이려고 Kyverno 전용 audience(기본값: `kyverno-svc.kyverno.io`)를 사용합니다.
+:::
+
+## User 라이브러리
+
+**User 라이브러리**에는 `parseServiceAccount()` 같은 함수가 있어서, 어드미션 요청을 일으킨 사용자나 서비스 계정에서 메타데이터를 추출합니다. 이 표현식으로 사용자 신원, 네임스페이스 소속, 서비스 계정 이름 규칙에 따라 정책을 시행할 수 있습니다.
+
+| CEL 표현식                                                                    | 용도                                                      |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `parseServiceAccount(request.userInfo.username).Name == "my-sa"`              | 요청이 특정 ServiceAccount에서 온 것인지 검증합니다       |
+| `parseServiceAccount(request.userInfo.username).Namespace == "system"`        | ServiceAccount가 `system` 네임스페이스에 속하는지 확인합니다 |
+| `parseServiceAccount(request.userInfo.username).Name.startsWith("team-")`     | ServiceAccount 이름 규칙을 강제합니다                     |
+| `parseServiceAccount(request.userInfo.username).Namespace in ["dev", "prod"]` | 특정 네임스페이스에만 접근을 허용합니다                   |
+
+다음 예시 정책은 `kube-system` 네임스페이스에서 `replicaset-controller`, `deployment-controller`, `daemonset-controller` 같은 이름을 가진 서비스 계정만 파드를 만들 수 있게 합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: restrict-pod-creation
+spec:
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE']
+  variables:
+    - name: sa
+      expression: parseServiceAccount(request.userInfo.username)
+  validations:
+    - expression: variables.sa.Namespace == "kube-system"
+      message: Only kube-system service accounts can create pods
+    - expression: variables.sa.Name in ["replicaset-controller", "deployment-controller", "daemonset-controller"]
+      message: Only trusted system controllers can create pods
+```
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-service-account-labels
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  variables:
+    - name: sa
+      expression: parseServiceAccount(request.userInfo.username)
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: |
+          Object{
+            metadata: Object.metadata{
+              labels: {
+                "service-account": string(variables.sa.Name),
+                "namespace": string(variables.sa.Namespace)
+              }
+            }
+          }
+```
+
+## Image 라이브러리
+
+**Image 라이브러리**는 이미지 참조를 파싱하고 분석하는 함수를 제공합니다. 정책 작성자는 레지스트리, 태그, 다이제스트를 검사해서 특정 레지스트리의 이미지만 허용하거나 태그를 금지하는 식으로 이미지 표준을 강제할 수 있습니다.
+
+| CEL 표현식                                                                                  | 용도                                                                       |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `image("nginx:latest")`                                                                     | 이미지 문자열을 이미지 객체로 변환합니다(이미지 메서드를 호출하기 전에 반드시 필요) |
+| `isImage("nginx:latest")`                                                                   | 문자열이 유효한 이미지인지 확인합니다                                      |
+| `image("nginx:latest").registry()`                                                          | 이미지 레지스트리를 가져옵니다(예: `index.docker.io`)                      |
+| `image("nginx:latest").repository()`                                                        | 이미지 리포지토리 경로를 가져옵니다(예: `library/nginx`)                   |
+| `image("nginx:latest").identifier()`                                                        | 이미지 식별자를 가져옵니다(예: 태그 또는 다이제스트 부분)                  |
+| `image("nginx:latest").tag()`                                                               | 이미지의 태그 부분을 가져옵니다(예: `latest`)                              |
+| `image("nginx@sha256:abcd...").digest()`                                                    | 이미지의 다이제스트 부분을 가져옵니다                                      |
+| `image("nginx:sha256:abcd...").containsDigest()`                                            | 이미지 문자열에 다이제스트가 포함되어 있는지 확인합니다                    |
+| `object.spec.containers.map(c, image(c.image)).map(i, i.registry()).all(r, r == "ghcr.io")` | 모든 컨테이너 이미지가 `ghcr.io` 레지스트리에서 온 것인지 확인합니다       |
+| `object.spec.containers.map(c, image(c.image)).all(i, i.containsDigest())`                  | 모든 이미지가 다이제스트를 포함하는지 확인합니다                           |
+
+다음 예시는 모든 이미지가 다이제스트를 사용하도록 강제합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: check-images
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  variables:
+    - name: images
+      expression: >-
+        object.spec.containers.map(e, parseImageReference(e.image))
+        + object.spec.?initContainers.orValue([]).map(e, parseImageReference(e.image))
+        + object.spec.?ephemeralContainers.orValue([]).map(e, parseImageReference(e.image))
+  validations:
+    - expression: >-
+        variables.images.map(i, i.containsDigest()).all(e, e)
+      message: >-
+        images must be specified using a digest
+```
+
+## ImageData 라이브러리
+
+**ImageData 라이브러리**는 아키텍처, OS, 다이제스트, 태그, 레이어 같은 OCI 레지스트리 메타데이터까지 이미지 검사 범위를 넓힙니다. `image.GetMetadata()`로 OCI 레지스트리에서 컨테이너 이미지의 세부 정보를 가져와 이미지 내용과 호환성을 정밀하게 검증할 수 있습니다.
+
+| CEL 표현식                                                                                                     | 용도                                                      |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `image.GetMetadata("nginx:1.21").config.architecture == "amd64"`                                               | 이미지 아키텍처가 `amd64`인지 확인합니다                  |
+| `image.GetMetadata("nginx:1.21").config.os == "linux"`                                                         | 이미지가 Linux용으로 빌드되었는지 확인합니다              |
+| `image.GetMetadata("nginx:1.21").config.author == "docker"`                                                    | 이미지 작성자를 확인합니다                                |
+| `image.GetMetadata("nginx:1.21").config.variant == "v7"`                                                       | 아키텍처 변형(variant)을 검증합니다                       |
+| `image.GetMetadata("nginx:1.21").config.created != ""`                                                         | 이미지에 생성 타임스탬프가 있는지 확인합니다              |
+| `image.GetMetadata("nginx:1.21").config.docker_version.startsWith("20.")`                                      | 이미지를 빌드할 때 쓴 Docker 버전을 확인합니다            |
+| `image.GetMetadata("nginx:1.21").config.container == "nginx"`                                                  | 컨테이너 이름을 검증합니다                                |
+| `image.GetMetadata("nginx:1.21").config.os_features.exists(f, f == "sse4")`                                    | 특정 OS 기능이 있는지 확인합니다                          |
+| `image.GetMetadata("nginx:1.21").digest.startsWith("sha256:")`                                                 | 이미지에 올바른 SHA256 다이제스트가 있는지 검증합니다     |
+| `image.GetMetadata("nginx:1.21").manifest.schemaVersion == 2`                                                  | 이미지 매니페스트가 스키마 버전 2인지 확인합니다          |
+| `image.GetMetadata("nginx:1.21").manifest.mediaType == "application/vnd.docker.distribution.manifest.v2+json"` | 이미지 매니페스트의 미디어 유형을 검증합니다              |
+| `image.GetMetadata("nginx:1.21").manifest.layers.size() > 0`                                                   | 매니페스트에 이미지 레이어가 나열되어 있는지 확인합니다   |
+| `image.GetMetadata("nginx:1.21").manifest.annotations.exists(a, a.key == "org.opencontainers.image.title")`    | 특정 어노테이션이 있는지 확인합니다                       |
+| `image.GetMetadata("nginx:1.21").manifest.subject != null`                                                     | 이미지에 subject(예: SBOM 참조)가 있는지 확인합니다       |
+| `image.GetMetadata("nginx:1.21").manifest.config.mediaType.contains("json")`                                   | config 디스크립터의 미디어 유형이 JSON인지 검증합니다     |
+| `image.GetMetadata("nginx:1.21").manifest.layers.all(l, l.mediaType.startsWith("application/vnd.docker"))`     | 모든 레이어가 Docker 호환 미디어 유형인지 확인합니다      |
+
+`image.GetMetadata()` 함수는 OCI 이미지의 핵심 메타데이터를 추출하므로 다양한 속성을 기준으로 검증할 수 있습니다.
+
+다음 예시 정책은 파드 이미지에 메타데이터가 있고, amd64이며, 매니페스트 스키마 버전 2를 쓰는지 확인합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: check-image-details
+spec:
+  validationActions: [Deny]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  variables:
+    - name: imageRef
+      expression: object.spec.containers[0].image
+    - name: imageKey
+      expression: variables.imageRef
+    - name: image
+      expression: image.GetMetadata(variables.imageKey)
+
+  validations:
+    - expression: variables.image != null
+      message: >-
+        Failed to retrieve image metadata
+
+    - expression: variables.image.config.architecture == "amd64"
+      messageExpression: >-
+        string(variables.image.config.architecture) + ' image architecture is not supported'
+
+    - expression: variables.image.manifest.schemaVersion == 2
+      message: >-
+        Only schemaVersion 2 image manifests are supported
+```
+
+## GlobalContext 라이브러리
+
+**GlobalContext 라이브러리**는 `globalContext.Get()`으로 정책 사이에서 공유하는 변수를 제공합니다. 이 변수는 `GlobalContextEntry` 리소스가 외부 API 호출로 채웁니다. 덕분에 클러스터 전체 설정이나 집계 데이터를 기준으로 요청을 효율적으로 검증할 수 있습니다.
+
+| **CEL 표현식**                                                                | **용도**                                                          |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `globalContext.Get("gctxentry-apicall-correct", "") != 0`                     | 리소스 생성을 허용하기 전에 특정 Deployment가 있는지 확인합니다   |
+| `globalContext.Get("team-cluster-values", "").someValue == "enabled"`         | 글로벌 컨텍스트 데이터로 공유 클러스터 전체 설정을 검증합니다     |
+| `globalContext.Get("global-pod-labels", "").contains(object.metadata.labels)` | 파드 레이블이 미리 정의한 글로벌 레이블과 일치하는지 확인합니다   |
+
+이 기능을 쓰려면 먼저 `GlobalContextEntry`를 정의해야 합니다.
+
+```yaml
+apiVersion: kyverno.io/v2
+kind: GlobalContextEntry
+metadata:
+  name: gctxentry-apicall-correct
+spec:
+  apiCall:
+    urlPath: '/apis/apps/v1/namespaces/test-globalcontext-apicall-correct/deployments'
+    refreshInterval: 1h
+```
+
+다음 정책은 특정 Deployment가 있어야만 Pod 생성을 허용합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: vpol-apicall-correct
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: [v1]
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods']
+  variables:
+    - name: dcount
+      expression: >-
+        globalContext.Get("gctxentry-apicall-correct", "")
+  validations:
+    - expression: >-
+        variables.dcount != 0
+      message: >-
+        main-deployment should exist
+```
+
+**글로벌 컨텍스트**를 활용하면 Kyverno가 중복 조회를 없애고 정책 사이에서 데이터를 효율적으로 공유하므로, 검증의 정확도와 성능이 모두 좋아집니다.
+
+## Hash 라이브러리
+
+**Hash 라이브러리**는 임의의 값에 해시 함수를 실행합니다. 검증에도 쓸 수 있고, 해시 정보를 객체에 넣는 변경에도 쓸 수 있습니다.
+
+| **CEL 표현식**              | **용도**                                      |
+| --------------------------- | --------------------------------------------- |
+| `hash.md5("somestring")`    | 임의의 문자열 값의 md5 해시를 구합니다        |
+| `hash.sha1("somestring")`   | 임의의 문자열 값의 sha1 해시를 구합니다       |
+| `hash.sha256("somestring")` | 임의의 문자열 값의 sha256 해시를 구합니다     |
+
+다음 정책은 특정 Deployment의 이미지 이름 해시가 `nginx:latest`를 나타내는 필수 값과 일치하는지 확인합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1beta1
+kind: ValidatingPolicy
+metadata:
+  name: check-hash
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments]
+  variables:
+    - name: expectedHash
+      expression: >-
+        "403554a5dfea78d1ca4a8ff5830ac2ae"
+    - name: md5sum
+      expression: >-
+        hash.md5(object.spec.template.spec.containers[0].image)
+    - name: accept
+      expression: >-
+        variables.md5sum == variables.expectedHash
+  validations:
+    - expression: >-
+        variables.accept
+      messageExpression: >-
+        'Expected MD5 hash ' + variables.expectedHash + ', got: ' + variables.md5sum
+```
+
+## Math 라이브러리
+
+**Math 라이브러리**는 정책에서 숫자를 계산하는 수학 연산을 제공합니다. 숫자를 특정 자릿수로 반올림하는 함수가 있고, 양수와 음수 자릿수를 모두 지원합니다.
+
+| CEL 표현식                   | 용도                                         |
+| ---------------------------- | -------------------------------------------- |
+| `math.round(10.125, 2)`      | 소수 둘째 자리로 반올림합니다(`10.13` 반환)  |
+| `math.round(10.125, 0)`      | 가장 가까운 정수로 반올림합니다(`10.0` 반환) |
+| `math.round(12345.6789, -2)` | 백의 자리로 반올림합니다(`12300.0` 반환)     |
+
+다음 예시 정책은 CPU 요청이 적절한 정밀도로 반올림되어 있고 8코어를 넘지 않는지 검증합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: validate-cpu-precision
+spec:
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods']
+  variables:
+    - name: containers
+      expression: >-
+        object.spec.containers + object.spec.?initContainers.orValue([])
+    - name: cpuRequests
+      expression: >-
+        variables.containers.map(c, 
+          has(c.resources.requests) && has(c.resources.requests.cpu) ? 
+          double(c.resources.requests.cpu.replace('m', '')) / 1000.0 : 0.0
+        )
+  validations:
+    - expression: >-
+        variables.cpuRequests.all(cpu, 
+          cpu == 0.0 || math.round(cpu, 2) == cpu
+        )
+      message: >-
+        CPU requests must be rounded to at most 2 decimal places
+
+    - expression: >-
+        variables.cpuRequests.all(cpu, cpu <= 8.0)
+      messageExpression: >-
+        'CPU request ' + string(variables.cpuRequests.filter(c, c > 8.0)[0]) + 
+        ' exceeds maximum of 8.0 cores'
+```
+
+## Random 라이브러리
+
+**Random 라이브러리**는 정규식 패턴에 맞는 임의의 문자열을 만듭니다. 변경 정책에서 고유 식별자, 토큰, 기본값을 만들 때 유용합니다. 사용자 정의 패턴을 지원하며, 인자를 주지 않으면 기본 패턴을 사용합니다.
+
+| CEL 표현식                                      | 용도                                                           |
+| ----------------------------------------------- | -------------------------------------------------------------- |
+| `random()`                                      | 8자 영숫자 문자열 `[0-9a-z]{8}`을 임의로 만듭니다              |
+| `random("[A-Z0-9]{8}")`                         | 대문자 영숫자 8자 문자열을 만듭니다                            |
+| `random("[0-9]{4}-[0-9]{4}")`                   | `1234-5678` 같은 패턴을 만듭니다                               |
+| `random("[a-f0-9]{32}")`                        | 32자 16진수 문자열을 만듭니다                                  |
+| `random("[A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}")` | UUID와 비슷한 패턴을 만듭니다                                  |
+
+다음 변경 정책 예시는 Deployment에 고유한 추적 ID를 추가합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-tracking-id
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['apps/v1']
+        operations: ['CREATE']
+        resources: ['deployments']
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: |
+          Object{
+            metadata: Object.metadata{
+              labels: {
+                "tracking-id": random("[a-z0-9]{8}-[a-z0-9]{4}"),
+              }
+            }
+          }
+```
+
+## Transform 라이브러리
+
+**Transform 라이브러리**는 서로 다른 데이터 구조 사이를 변환하는 유틸리티를 제공합니다. `listObjToMap()` 함수는 객체 리스트 두 개에서 지정한 키 필드와 값 필드를 뽑아 하나의 맵으로 합칩니다.
+
+| CEL 표현식                                                                                                                                    | 용도                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `transform.listObjToMap([{"name": "app1"}], [{"version": "v1"}], "name", "version")`                                                          | 리스트 두 개로 맵 `{"app1": "v1"}`을 만듭니다 |
+| `transform.listObjToMap([{"id": "x"}, {"id": "y"}], [{"val": 1}, {"val": 2}], "id", "val")`                                                   | 맵 `{"x": 1, "y": 2}`를 만듭니다      |
+| `transform.listObjToMap(object.spec.containers.map(c, {"name": c.name}), object.spec.containers.map(c, {"image": c.image}), "name", "image")` | 컨테이너 이름을 이미지에 매핑합니다   |
+
+다음 예시 정책은 컨테이너 환경 변수가 기대한 값과 일치하는지 검증합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: require-key
+spec:
+  failurePolicy: Fail
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods']
+  variables:
+    - name: envMap
+      expression: >-
+        transform.listObjToMap(
+          object.spec.containers[0].env,
+          object.spec.containers[0].env,
+          "name",
+          "value"
+        )
+  validations:
+    - expression: >-
+        variables.envMap["KEY"] == "123-456-789"
+      message: >-
+        KEY must be 123-456-789.
+```
+
+실제로 실행하면 다음과 같습니다.
+
+```sh
+/ # cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: object-from-list-demo
+  labels:
+    foo: bar
+spec:
+  containers:
+  - name: containername01
+    image: containerimage:01
+    env:
+    - name: KEY
+      value: "89383938"
+    - name: endpoint
+      value: "licensing.corp.org"
+EOF
+Error from server: error when creating "STDIN": admission webhook "vpol.validate.kyverno.svc-fail" denied the request: Policy require-key failed: KEY must be 123-456-789.
+```
+
+## JSON 라이브러리
+
+**JSON 라이브러리**는 `json.unmarshal()` 함수로 JSON을 파싱합니다. JSON 문자열을 정책 표현식에서 쓸 수 있는 구조화된 데이터로 바꿉니다.
+
+| CEL 표현식                                              | 용도                              |
+| ------------------------------------------------------- | --------------------------------- |
+| `json.unmarshal('{"key": "value"}')`                    | JSON 문자열을 맵으로 파싱합니다   |
+| `json.unmarshal('{"count": 5}').count`                  | 파싱한 뒤 중첩 필드에 접근합니다  |
+| `json.unmarshal('[1, 2, 3]')`                           | JSON 배열을 파싱합니다            |
+| `json.unmarshal(object.metadata.annotations['config'])` | 어노테이션의 JSON을 파싱합니다    |
+| `json.marshal({"key": "value"})`                        | 맵을 JSON 문자열로 직렬화합니다   |
+| `json.marshal([1, 2, 3])`                               | 리스트를 JSON 문자열로 직렬화합니다 |
+| `json.marshal(true)`                                    | 불리언을 JSON 문자열로 직렬화합니다 |
+
+다음 예시 정책은 어노테이션에 JSON으로 저장된 설정을 검증합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: require-security-approval
+spec:
+  failurePolicy: Fail
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['apps']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['deployments']
+  variables:
+    - name: approval
+      expression: >-
+        json.unmarshal(object.metadata.annotations["security.approval"])
+  validations:
+    - expression: >-
+        variables.approval.approved == true
+      message: >-
+        Deployment is not approved by security policy.
+```
+
+적용하면 다음과 같이 됩니다.
+
+```sh
+/ # cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-prod
+  labels:
+    app: nginx
+  annotations:
+    security.approval: |
+      {
+        "approved": false,
+        "reviewedBy": "platform-security",
+        "ticket": "SEC-4821",
+        "reviewedAt": "2026-01-12T09:41:00Z",
+        "notes": "Pending image vulnerability scan"
+      }
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        resources:
+          requests:
+            cpu: "1"
+EOF
+Error from server: error when creating "STDIN": admission webhook "vpol.validate.kyverno.svc-fail" denied the request: Policy require-security-approval failed: Deployment is not approved by security policy.
+```
+
+## YAML 라이브러리
+
+**YAML 라이브러리**는 `yaml.parse()` 함수로 YAML 형식의 문자열을 구조화된 데이터로 파싱합니다. ConfigMap이나 어노테이션에 저장된 YAML 설정을 검증할 때 특히 유용합니다.
+
+| CEL 표현식                               | 용도                                |
+| ---------------------------------------- | ----------------------------------- |
+| `yaml.parse('key: value')`               | YAML 문자열을 맵으로 파싱합니다     |
+| `yaml.parse('items:\n- a\n- b\n- c')`    | 리스트가 있는 YAML을 파싱합니다     |
+| `yaml.parse(object.data['config.yaml'])` | ConfigMap 데이터의 YAML을 파싱합니다 |
+| `yaml.parse('count: 42').count`          | 파싱한 뒤 중첩 필드에 접근합니다    |
+
+다음 예시 정책은 Deployment 어노테이션의 YAML 값을 검증합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: check-goodboi
+spec:
+  failurePolicy: Fail
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments]
+  variables:
+    - name: pets
+      expression: >-
+        yaml.parse(object.metadata.annotations.pets)
+  validations:
+    - expression: >-
+        variables.pets.species.isGoodBoi == true
+      message: >-
+        "Only good bois allowed."
+```
+
+실제 동작은 다음과 같습니다.
+
+```sh
+/ # cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: some-deploy
+  labels:
+    app: nginx
+  annotations:
+    pets: |-
+      species:
+        dog: lab
+        name: dory
+        color: black
+        height: 15
+        isGoodBoi: false
+        snacks:
+        - chimken
+        - fries
+        - pizza
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        resources:
+          requests:
+            cpu: 1
+EOF
+Error from server: error when creating "STDIN": admission webhook "vpol.validate.kyverno.svc-fail" denied the request: Policy check-goodboi failed: "Only good bois allowed."
+```
+
+## Time 함수
+
+Kyverno CEL 실행 환경에는 시간과 관련된 함수가 몇 가지 들어 있습니다. 현재 시각 가져오기, 타임스탬프 자르기(truncate), 타임스탬프를 cron 형식으로 변환하기가 그것입니다.
+
+| CEL 표현식                                                         | 용도                                                           |
+| ------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `time.now()`                                                       | 현재 타임스탬프를 가져옵니다                                   |
+| `time.now() - duration("24h")`                                     | 24시간 전 타임스탬프를 가져옵니다                              |
+| `time.truncate(timestamp("2025-01-02T03:45:27Z"), duration("1h"))` | 가장 가까운 시 단위로 자릅니다(`2025-01-02T03:00:00Z` 반환)    |
+| `time.toCron(timestamp("2025-01-02T15:30:00Z"))`                   | 타임스탬프를 cron 형식으로 변환합니다(`"30 15 2 1 4"` 반환)    |
+| `time.now() + duration("7d")`                                      | 7일 뒤 타임스탬프를 가져옵니다                                 |
+
+다음 삭제 정책은 생성된 지 24시간이 지난 정책 예외를 삭제하며, 10분마다 평가됩니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: DeletingPolicy
+metadata:
+  name: delete-exceptions
+spec:
+  conditions:
+    - expression: time.now() - timestamp(object.metadata.creationTimestamp) > duration("24h")
+      name: check-creation-time
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - 'policies.kyverno.io'
+        apiVersions:
+          - v1
+        resources:
+          - policyexceptions
+  schedule: '*/10 * * * *'
+```
+
+다음 삭제 정책은 생성 타임스탬프를 가장 가까운 시 단위로 잘랐을 때 24시간이 지난 정책 예외를 삭제합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: DeletingPolicy
+metadata:
+  name: delete-exceptions-trunacted
+spec:
+  conditions:
+    - expression: time.now() - time.truncate(timestamp(object.metadata.creationTimestamp), duration("1h")) > duration("24h")
+      name: check-creation-time
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - 'policies.kyverno.io'
+        apiVersions:
+          - v1
+        resources:
+          - policyexceptions
+  schedule: '*/10 * * * *'
+```
+
+## X509 라이브러리
+
+**X509 라이브러리**는 PEM 형식의 X.509 인증서와 인증서 서명 요청(CSR)을 디코딩하고 검증합니다. 발급자, 주체, 유효 기간, 키 용도, 확장 필드, 공개 키 정보 같은 인증서 메타데이터를 추출합니다.
+
+| CEL 표현식                                | 용도                                                  |
+| ----------------------------------------- | ----------------------------------------------------- |
+| `x509.decode(cert).IsCA`                  | 인증서가 인증 기관(CA)인지 확인합니다                 |
+| `x509.decode(cert).NotBefore`             | 인증서 유효 시작일을 가져옵니다                       |
+| `x509.decode(cert).NotAfter`              | 인증서 만료일을 가져옵니다                            |
+| `x509.decode(cert).Issuer.CommonName`     | 발급자의 common name을 추출합니다                     |
+| `x509.decode(cert).DNSNames`              | Subject Alternative Names의 DNS 이름 목록을 가져옵니다 |
+| `x509.decode(cert).KeyUsage`              | 인증서의 키 용도 플래그를 가져옵니다                  |
+| `x509.decode(cert).BasicConstraintsValid` | 기본 제약(basic constraints) 확장이 유효한지 확인합니다 |
+| `x509.decode(cert).PublicKey.E`           | RSA 공개 키 지수를 가져옵니다                         |
+
+다음 예시 정책은 웹훅 인증서의 만료일이 일주일 넘게 남아 있는지 검증합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: test-x509-decode
+spec:
+  failurePolicy: Fail
+  validationActions:
+    - Deny
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['admissionregistration.k8s.io']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources:
+          - validatingwebhookconfigurations
+          - mutatingwebhookconfigurations
+  validations:
+    - expression: >-
+        timestamp(x509.decode(string(base64.decode(object.webhooks[0].clientConfig.caBundle))).NotAfter) - time.now() > duration("168h")
+      message: >-
+        Certificate in the webhook will expire in less than a week.
+```
+
+인증서 전체 JSON 객체의 구조는 다음과 같습니다.
+
+```json
+{
+  "AuthorityKeyId": null,
+  "BasicConstraintsValid": true,
+  "CRLDistributionPoints": null,
+  "DNSNames": null,
+  "EmailAddresses": null,
+  "ExcludedDNSDomains": null,
+  "ExcludedEmailAddresses": null,
+  "ExcludedIPRanges": null,
+  "ExcludedURIDomains": null,
+  "ExtKeyUsage": null,
+  "Extensions": [
+    {
+      "Critical": true,
+      "Id": [2, 5, 29, 15],
+      "Value": "AwICpA=="
+    },
+    {
+      "Critical": true,
+      "Id": [2, 5, 29, 19],
+      "Value": "MAMBAf8="
+    },
+    {
+      "Critical": false,
+      "Id": [2, 5, 29, 14],
+      "Value": "BBSWivt1n53+61ZGAczAi0mleejTKg=="
+    }
+  ],
+  "ExtraExtensions": null,
+  "IPAddresses": null,
+  "IsCA": true,
+  "Issuer": {
+    "CommonName": "*.kyverno.svc",
+    "Country": null,
+    "ExtraNames": null,
+    "Locality": null,
+    "Names": [
+      {
+        "Type": [2, 5, 4, 3],
+        "Value": "*.kyverno.svc"
+      }
+    ],
+    "Organization": null,
+    "OrganizationalUnit": null,
+    "PostalCode": null,
+    "Province": null,
+    "SerialNumber": "",
+    "StreetAddress": null
+  },
+  "IssuingCertificateURL": null,
+  "KeyUsage": 37,
+  "MaxPathLen": -1,
+  "MaxPathLenZero": false,
+  "NotAfter": "2023-10-10T12:46:32Z",
+  "NotBefore": "2022-10-10T11:46:32Z",
+  "OCSPServer": null,
+  "PermittedDNSDomains": null,
+  "PermittedDNSDomainsCritical": false,
+  "PermittedEmailAddresses": null,
+  "PermittedIPRanges": null,
+  "PermittedURIDomains": null,
+  "PolicyIdentifiers": null,
+  "PublicKey": {
+    "E": 65537,
+    "N": "28595925905962223424520947352207105451744616797088171943239289907331901888529856098458304611629660120574607501039902142361333982065793213267074854658525100799280158707840279479550961169213763526857247298653141711003931642606662052674943191476488665842309583311097351331994267413776792462637192775240062778036062353517979538994974045127175206597906751521558536719043095219698535279694800624795673809356898452438518041024126624051887044932164506019573725987204208750674129677584956156611454245004918943771571492757639432459688931855526941886354880727024912384140238027697348634609952850513122734230521040730560514233467"
+  },
+  "PublicKeyAlgorithm": 1,
+  "Raw": "MIIC7TCCAdWgAwIBAgIBADANBgkqhkiG9w0BAQsFADAYMRYwFAYDVQQDDA0qLmt5dmVybm8uc3ZjMB4XDTIyMTAxMDExNDYzMloXDTIzMTAxMDEyNDYzMlowGDEWMBQGA1UEAwwNKi5reXZlcm5vLnN2YzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOKF+2P0Ufp855hpdsGD4lYkd6oU7HZAOWm1XskAMwrdsqWwTNNAinyHRoPQIbNbGDQ+r6Cggc2mlxHJ90PnC2weHj5otaD17Z+ARZpJZ4HMWkEfFt8sxwo9vuQJRWihqNwFheowjswoSB1DHnPufrZHfztkMoRx278ZfHaIMdlSTg50ektkNDoHA3OJsxxw54X3HR1iq6SZwN8xNT0TI6B6BbfAYWMNmKCiZ2iV6kW//XnTEqGd2WcmhuP0SjwO4tCJbj9oV6+Bj/uhFr7J4foErMaodYDBtQs/ul2tcAwSBHfnC2KcLbiZTZsC0Rs0WPJ4YwF/cOsD7Z/RmLs4FHsCAwEAAaNCMEAwDgYDVR0PAQH/BAQDAgKkMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFJaK+3Wfnf7rVkYBzMCLSaV56NMqMA0GCSqGSIb3DQEBCwUAA4IBAQDY7F6b+t9BX7098JyGk6zeT39MoLdSv+8IaKXn+m8GyOKn3CZkruko57ycvPd4taC0gggtmUYynFhwPMQr+boNrrK9rat8Jw3yPPsBq/8D/s6tvwxSNXBfPUI5OvNIB/hA5XpJpdHQaCkYm+FWkcJsolkkbSOfVjUjImW26JHBnnPPtR4Y7dx0SVoPS19IC0T5RmdvgqlXj4XbhTnX3QOujVHn8u+wQ8po7EngHDQs+onfkp8ipe0QpEJL1ZdW2LhyDXGKrZ2y8UPZ9wYNzxHWaj1Thu4B9YFdsPUwWqSxn9e+FygpoktlD8YgT7jwgiVKX7Koz++zyvMIdhvRrtgS",
+  "RawIssuer": "MBgxFjAUBgNVBAMMDSoua3l2ZXJuby5zdmM=",
+  "RawSubject": "MBgxFjAUBgNVBAMMDSoua3l2ZXJuby5zdmM=",
+  "RawSubjectPublicKeyInfo": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4oX7Y/RR+nznmGl2wYPiViR3qhTsdkA5abVeyQAzCt2ypbBM00CKfIdGg9Ahs1sYND6voKCBzaaXEcn3Q+cLbB4ePmi1oPXtn4BFmklngcxaQR8W3yzHCj2+5AlFaKGo3AWF6jCOzChIHUMec+5+tkd/O2QyhHHbvxl8dogx2VJODnR6S2Q0OgcDc4mzHHDnhfcdHWKrpJnA3zE1PRMjoHoFt8BhYw2YoKJnaJXqRb/9edMSoZ3ZZyaG4/RKPA7i0IluP2hXr4GP+6EWvsnh+gSsxqh1gMG1Cz+6Xa1wDBIEd+cLYpwtuJlNmwLRGzRY8nhjAX9w6wPtn9GYuzgUewIDAQAB",
+  "RawTBSCertificate": "MIIB1aADAgECAgEAMA0GCSqGSIb3DQEBCwUAMBgxFjAUBgNVBAMMDSoua3l2ZXJuby5zdmMwHhcNMjIxMDEwMTE0NjMyWhcNMjMxMDEwMTI0NjMyWjAYMRYwFAYDVQQDDA0qLmt5dmVybm8uc3ZjMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4oX7Y/RR+nznmGl2wYPiViR3qhTsdkA5abVeyQAzCt2ypbBM00CKfIdGg9Ahs1sYND6voKCBzaaXEcn3Q+cLbB4ePmi1oPXtn4BFmklngcxaQR8W3yzHCj2+5AlFaKGo3AWF6jCOzChIHUMec+5+tkd/O2QyhHHbvxl8dogx2VJODnR6S2Q0OgcDc4mzHHDnhfcdHWKrpJnA3zE1PRMjoHoFt8BhYw2YoKJnaJXqRb/9edMSoZ3ZZyaG4/RKPA7i0IluP2hXr4GP+6EWvsnh+gSsxqh1gMG1Cz+6Xa1wDBIEd+cLYpwtuJlNmwLRGzRY8nhjAX9w6wPtn9GYuzgUewIDAQABo0IwQDAOBgNVHQ8BAf8EBAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUlor7dZ+d/utWRgHMwItJpXno0yo=",
+  "SerialNumber": 0,
+  "Signature": "2Oxem/rfQV+9PfCchpOs3k9/TKC3Ur/vCGil5/pvBsjip9wmZK7pKOe8nLz3eLWgtIIILZlGMpxYcDzEK/m6Da6yva2rfCcN8jz7Aav/A/7Orb8MUjVwXz1COTrzSAf4QOV6SaXR0GgpGJvhVpHCbKJZJG0jn1Y1IyJltuiRwZ5zz7UeGO3cdElaD0tfSAtE+UZnb4KpV4+F24U5190Dro1R5/LvsEPKaOxJ4Bw0LPqJ35KfIqXtEKRCS9WXVti4cg1xiq2dsvFD2fcGDc8R1mo9U4buAfWBXbD1MFqksZ/XvhcoKaJLZQ/GIE+48IIlSl+yqM/vs8rzCHYb0a7YEg==",
+  "SignatureAlgorithm": 4,
+  "Subject": {
+    "CommonName": "*.kyverno.svc",
+    "Country": null,
+    "ExtraNames": null,
+    "Locality": null,
+    "Names": [
+      {
+        "Type": [2, 5, 4, 3],
+        "Value": "*.kyverno.svc"
+      }
+    ],
+    "Organization": null,
+    "OrganizationalUnit": null,
+    "PostalCode": null,
+    "Province": null,
+    "SerialNumber": "",
+    "StreetAddress": null
+  },
+  "SubjectKeyId": "lor7dZ+d/utWRgHMwItJpXno0yo=",
+  "URIs": null,
+  "UnhandledCriticalExtensions": null,
+  "UnknownExtKeyUsage": null,
+  "Version": 3
+}
+```

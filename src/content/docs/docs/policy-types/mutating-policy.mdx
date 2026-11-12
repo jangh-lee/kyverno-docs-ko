@@ -1,0 +1,911 @@
+---
+title: MutatingPolicy
+excerpt: >-
+  새 리소스나 기존 리소스를 변경합니다
+sidebar:
+  order: 3
+---
+
+import FeatureState from '../../../../components/FeatureState.astro'
+import { lastestStableVersion } from '../../../../constants'
+
+<FeatureState state="stable" version={lastestStableVersion} />
+
+Kyverno `MutatingPolicy`는 Kubernetes `MutatingAdmissionPolicy`를 확장한 유형입니다. 복잡한 변경(mutation) 작업과 Policy-as-Code에 필요한 기능을 더했습니다. `MutatingPolicy`는 `MutatingAdmissionPolicy`의 상위 집합이며, Kyverno 고유 기능을 위한 필드를 추가로 갖습니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-label
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE']
+        resources: ['pods']
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                foo: "bar"
+              }
+            }
+          }
+```
+
+## MutatingAdmissionPolicy와 비교
+
+아래 표는 Kubernetes `MutatingAdmissionPolicy`와 Kyverno `MutatingPolicy`의 주요 기능을 비교한 것입니다.
+
+| 기능             | MutatingAdmissionPolicy | MutatingPolicy                              |
+| ---------------- | ----------------------- | ------------------------------------------- |
+| 적용 시점        | 어드미션                | 어드미션, 백그라운드, 파이프라인 등         |
+| 페이로드         | Kubernetes              | Kubernetes                                  |
+| 배포 방식        | Kubernetes              | Helm, CLI, 웹 서비스, API, SDK              |
+| CEL 라이브러리   | 기본                    | 확장                                        |
+| 바인딩           | 수동                    | 자동                                        |
+| 자동 생성        | -                       | 파드 컨트롤러, MutatingAdmissionPolicy      |
+| 외부 데이터      | -                       | Kubernetes 리소스, API 호출                 |
+| 캐싱             | -                       | 글로벌 컨텍스트, 이미지 검증 결과           |
+| 백그라운드 스캔  | -                       | 주기적 실행, 정책 생성·변경 시 실행         |
+| 예외             | -                       | 세분화된 예외                               |
+| 리포팅           | -                       | Policy WG Reports API                       |
+| 테스트           | -                       | Kyverno CLI(단위), Chainsaw(e2e)            |
+| 기존 리소스      | -                       | 백그라운드 변경 지원                        |
+
+## 추가 필드
+
+`MutatingPolicy`는 [Kubernetes MutatingAdmissionPolicy](https://kubernetes.io/docs/reference/access-authn-authz/mutating-admission-policy/)에 Kyverno 기능을 위한 필드를 더했습니다. 전체 레퍼런스는 [API 명세](https://htmlpreview.github.io/?https://github.com/kyverno/kyverno/blob/main/docs/user/crd/index.html#policies.kyverno.io%2fv1alpha1)에서 볼 수 있습니다.
+
+### evaluation
+
+`spec.evaluation` 필드는 정책을 어떻게 적용하고 페이로드를 어떻게 처리할지 정합니다. 정책의 어드미션 요청 처리와 기존 리소스 변경을 켜거나 끌 수 있습니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: sample
+spec:
+  evaluation:
+    admission:
+      enabled: true
+    mutateExisting:
+      enabled: false
+  # ...
+```
+
+- **`admission.enabled`**: `true`로 설정하면 어드미션 요청(CREATE, UPDATE 작업) 중에 정책을 적용합니다. 리소스를 만들거나 수정하는 시점에 변경하는 주된 사용 방식입니다.
+
+- **`mutateExisting.enabled`**: `true`로 설정하면 백그라운드 처리로 클러스터에 이미 있는 리소스에 정책을 적용합니다. 리소스를 다시 만들거나 업데이트하지 않아도 기존 리소스를 변경할 수 있습니다.
+
+- **`spec.evaluation.mode`**: `Kubernetes`(기본값) 또는 `JSON`입니다. `JSON` 모드에서는 정책이 Kubernetes 메타데이터가 필요 없는 객체 루트 JSON 페이로드에 JSONPatch 표현식을 적용합니다. [JSON 페이로드](#json-페이로드)를 참고하세요.
+
+자세한 내용은 [API 레퍼런스](https://htmlpreview.github.io/?https://github.com/kyverno/kyverno/blob/main/docs/user/crd/index.html#policies.kyverno.io/v1.EvaluationConfiguration)를 참고하세요.
+
+### webhookConfiguration
+
+`spec.webhookConfiguration` 필드는 Kyverno 어드미션 컨트롤러 웹훅 설정을 관리하는 속성을 정의합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-labels
+spec:
+  webhookConfiguration:
+    timeoutSeconds: 15
+  # ...
+```
+
+위 정책은 `webhookConfiguration.timeoutSeconds`를 `15`로 설정했습니다. 어드미션 요청이 정책 평가를 기다리는 시간입니다. 기본값은 `10`초이고 설정 가능한 범위는 `1`~`30`초입니다. 이 시간이 지나면 실패 정책(failure policy)에 따라 요청이 실패하거나 평가 결과가 무시됩니다. Kyverno는 이 설정을 생성되는 `MutatingWebhookConfiguration`에 반영합니다.
+
+자세한 내용은 [API 레퍼런스](https://htmlpreview.github.io/?https://github.com/kyverno/kyverno/blob/main/docs/user/crd/index.html#policies.kyverno.io/v1.WebhookConfiguration)를 참고하세요.
+
+### autogen
+
+`spec.autogen` 필드는 정책 자동 생성 동작을 정의합니다. 파드 컨트롤러용 정책을 자동으로 만들거나, Kubernetes API 서버에서 실행할 `MutatingAdmissionPolicy`를 생성할 수 있습니다.
+
+:::note[참고]
+파드 컨트롤러 자동 생성과 `MutatingAdmissionPolicy` 생성은 함께 쓸 수 없습니다. `spec.autogen.podControllers`를 설정하면 Kyverno는 `MutatingAdmissionPolicy`를 만들지 않고, 그 이유를 정책 status에 기록합니다. `MutatingAdmissionPolicy`는 Kubernetes API 서버가 직접 평가하기 때문에 Kyverno가 만든 파드 컨트롤러용 규칙 변형을 담을 수 없기 때문입니다.
+:::
+
+다음은 `MutatingPolicy` 선언에서 deployments, jobs, cronjobs, statefulsets용 정책을 생성하는 예시입니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-default-labels
+spec:
+  autogen:
+    podControllers:
+      controllers:
+        - deployments
+        - jobs
+        - cronjobs
+        - statefulsets
+```
+
+다음은 `MutatingPolicy` 선언에서 `MutatingAdmissionPolicy`를 생성하는 예시입니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-default-labels
+spec:
+  autogen:
+    mutatingAdmissionPolicy:
+      enabled: true
+```
+
+`MutatingPolicy`에서 `MutatingAdmissionPolicy`를 생성하면 Kyverno의 모든 기능을 활용하면서도 어드미션 제어를 더 빠르고 안정적으로 실행할 수 있습니다.
+
+자세한 내용은 [API 레퍼런스](https://htmlpreview.github.io/?https://github.com/kyverno/kyverno/blob/main/docs/user/crd/index.html#policies.kyverno.io/v1.AutogenConfiguration)를 참고하세요.
+
+## 정책 범위
+
+MutatingPolicy에는 클러스터 범위 버전과 네임스페이스 범위 버전이 있습니다.
+
+- **`MutatingPolicy`**: 클러스터 범위입니다. 모든 네임스페이스의 리소스에 적용됩니다.
+- **`NamespacedMutatingPolicy`**: 네임스페이스 범위입니다. 같은 네임스페이스 안의 리소스에만 적용됩니다.
+
+두 정책은 기능과 필드 구조가 같고, 리소스를 선택하는 범위만 다릅니다.
+
+### NamespacedMutatingPolicy 예시
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: NamespacedMutatingPolicy
+metadata:
+  name: add-labels
+  namespace: production
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods']
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                environment: "production",
+                managed: "true"
+              }
+            }
+          }
+```
+
+`NamespacedMutatingPolicy`를 쓰면 네임스페이스 소유자가 cluster-admin 권한 없이도 변경 정책을 직접 관리할 수 있습니다. 멀티 테넌시와 보안 격리 면에서 이점이 있습니다.
+
+## Kyverno CEL 라이브러리
+
+Kyverno는 Kubernetes의 CEL 환경에 라이브러리를 더해 복잡한 변경 로직과 고급 기능을 쓸 수 있게 합니다. 사용할 수 있는 CEL 라이브러리 전체는 [CEL 라이브러리 문서](/docs/policy-types/cel-libraries/)를 참고하세요.
+
+## ApplyConfiguration 패치
+
+ApplyConfiguration 패치는 병합(merge) 방식입니다. Object를 반환하는 CEL 표현식으로 작성합니다. 대부분의 변경 작업에서 JSONPatch보다 직관적이고 실수할 여지가 적습니다.
+
+### 기본 ApplyConfiguration
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-service-account
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE']
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                foo: "bar"
+              }
+            }
+          }
+```
+
+### 조건부 ApplyConfiguration
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: conditional-labels
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: |
+          has(object.metadata.labels) && has(object.metadata.labels.environment) ?
+          Object{
+            metadata: Object.metadata{
+              labels: {"managed": "true"}
+            }
+          } : 
+          Object{
+            metadata: Object.metadata{
+              labels: {"environment": "dev", "managed": "true"}
+            }
+          }
+```
+
+## RFC 6902 JSON 패치
+
+JSONPatch는 RFC 6902 JSON Patch 연산으로 변경 작업을 세밀하게 제어합니다. 패치 연산을 정밀하게 제어해야 하는 복잡한 변경에 유용합니다.
+
+### 기본 JSONPatch
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-labels-jsonpatch
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ''
+        apiVersions:
+          - v1
+        resources:
+          - pods
+        operations:
+          - CREATE
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: |
+          has(object.metadata.labels) ?
+          [
+              JSONPatch{
+                  op: "add",
+                  path: "/metadata/labels/managed",
+                  value: "true"
+              }
+          ] :
+          [
+              JSONPatch{
+                  op: "add",
+                  path: "/metadata/labels",
+                  value: {"managed": "true"}
+              }
+          ]
+```
+
+### 여러 JSONPatch 연산
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: complex-jsonpatch
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: |
+          [
+            JSONPatch{
+              op: "add",
+              path: "/metadata/labels/environment",
+              value: "production"
+            },
+            JSONPatch{
+              op: "add",
+              path: "/metadata/annotations/kyverno.io~1managed",
+              value: "true"
+            },
+            JSONPatch{
+              op: "replace",
+              path: "/spec/securityContext/runAsNonRoot",
+              value: true
+            }
+          ]
+```
+
+### 이스케이프를 쓰는 조건부 JSONPatch
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: escape-jsonpatch
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ''
+        apiVersions:
+          - v1
+        resources:
+          - pods
+        operations:
+          - CREATE
+    mutations:
+      - patchType: JSONPatch
+        jsonPatch:
+          expression: |
+            [
+              JSONPatch{
+                op: "add",
+                path: "/metadata/labels/" + jsonpatch.escapeKey("app.kubernetes.io/name"),
+                value: "my-app"
+              }
+            ]
+```
+
+## CEL 함수로 반복 처리
+
+Kyverno는 `map()` 같은 CEL 함수로 리소스 안의 요소를 순회하는 반복 처리를 지원합니다. 리소스 안의 여러 요소에 변경을 적용할 수 있습니다.
+
+### 컨테이너 순회
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: foreach
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE']
+        resources: ['pods']
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            spec: Object.spec{
+              containers: object.spec.containers.map(container, Object.spec.containers{
+                name: container.name,
+                securityContext: Object.spec.containers.securityContext{
+                  allowPrivilegeEscalation: false
+                }
+              })
+            }
+          }
+```
+
+이 예시는 CEL의 `map()` 함수로 파드의 모든 컨테이너를 순회하면서 각 컨테이너에 `allowPrivilegeEscalation: false`를 설정한 `securityContext`를 추가합니다.
+
+### 필터를 쓰는 조건부 순회
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: foreach-conditional
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE', 'UPDATE']
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: |
+          object.spec.containers.map(c,
+            c.image.startsWith("nginx:") ?
+            JSONPatch{
+              op: "add",
+              path: "/spec/containers/" + string(object.spec.containers.indexOf(c)) + "/env",
+              value: [{"name": "NGINX_ENV", "value": "production"}]
+            } : null
+          ).filter(p, p != null)
+```
+
+이 예시는 CEL의 `map()`과 `filter()` 함수로 nginx 이미지를 쓰는 컨테이너에만 환경 변수를 추가합니다.
+
+## 기존 리소스 변경
+
+MutatingPolicy는 백그라운드 처리를 지원하므로 어드미션 시점뿐 아니라 클러스터에 이미 있는 리소스도 변경할 수 있습니다. `spec.evaluation.mutateExisting.enabled: true`로 설정하면 켜집니다.
+
+### 주의할 점
+
+1. **비동기 처리**: 기존 리소스 변경은 비동기로 처리됩니다. 트리거를 감지한 시점과 기존 리소스가 실제로 변경되는 시점 사이에 지연이 생기며, 지연 시간은 일정하지 않습니다.
+
+2. **사용자 정의 권한**: 거의 항상 사용자 정의 권한이 필요합니다. 이 변경은 AdmissionReview 중이 아니라 이미 있는 리소스에 일어나기 때문에 Kyverno가 기본으로 갖지 않은 권한이 추가로 필요할 수 있습니다. Kyverno 백그라운드 컨트롤러의 ServiceAccount에 권한을 추가하는 방법은 [권한 사용자 정의](/docs/installation/customization#customizing-permissions) 항목을 참고하세요. Kyverno는 기존 리소스 변경 정책을 설치할 때 이 권한을 확인합니다.
+
+### 트리거와 대상이 같은 경우
+
+트리거와 대상이 같은 리소스 유형이면 트리거가 발생할 때 그 유형의 기존 리소스를 모두 변경합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: same-trigger-target
+spec:
+  evaluation:
+    mutateExisting:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['namespaces']
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                foo: "bar"
+              }
+            }
+          }
+```
+
+이 예시에서는 네임스페이스가 하나라도 생성되거나 수정되면 Kyverno가 다음 작업을 합니다.
+
+1. 정책을 트리거한 네임스페이스를 변경합니다.
+2. 조건에 맞는 기존 네임스페이스를 모두 가져와 변경합니다.
+
+기존 네임스페이스가 10개 있는 상태에서 새로 하나를 만들면, 11개 네임스페이스 전체에 `foo: "bar"` 레이블이 추가됩니다.
+
+### 트리거와 대상이 다른 경우
+
+`targetMatchConstraints`로 트리거와 대상 리소스를 다르게 지정할 수 있습니다. 트리거가 발생하면 Kyverno는 대상 조건에 맞는 기존 리소스를 모두 변경합니다.
+
+변수 표현식에서는 `request.object`와 `request.oldObject`로 트리거 리소스의 속성에 접근할 수 있습니다. 변경 표현식의 `Object`는 `targetMatchConstraints`로 지정한 대상 리소스를 가리킵니다. 변경 표현식에서 `request.object`나 `request.oldObject`를 쓰려면 먼저 변수로 만들어 변경 컨텍스트에 전달해야 합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: different-trigger-target
+spec:
+  evaluation:
+    mutateExisting:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['namespaces']
+        resourceNames: ['test-namespace']
+  targetMatchConstraints:
+    namespaceSelector:
+      matchLabels:
+        test: 'enabled'
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['configmaps']
+  variables:
+    triggerNamespace: request.object.metadata.name
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                trigger: variables.triggerNamespace
+              }
+            }
+          }
+```
+
+이 예시의 동작은 다음과 같습니다.
+
+- **트리거**: 네임스페이스 `test-namespace`가 생성되거나 수정될 때입니다.
+- **대상**: `test: enabled` 레이블이 붙은 네임스페이스의 기존 ConfigMap이 모두 변경되어 `trigger: test-namespace` 레이블이 추가됩니다.
+
+조건에 맞는 네임스페이스에 ConfigMap이 5개 있는 상태에서 트리거 네임스페이스를 수정하면 5개가 모두 변경됩니다.
+
+Kyverno 1.17부터는 CEL 표현식으로 변경 대상을 선택할 수 있습니다. 표현식은 Kubernetes 객체로 평가되어야 하므로 resource 라이브러리를 사용해야 합니다. 표현식은 문자열 CEL 표현식을 받는 `targetMatchConstraints.expression` 필드에 정의합니다.
+
+다음 정책은 트리거 객체와 같은 네임스페이스에 있는 `test-cm-1` ConfigMap을 대상으로 삼습니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1beta1
+kind: MutatingPolicy
+metadata:
+  name: test-mpol-different-trigger-target-expression
+spec:
+  failurePolicy: Fail
+  evaluation:
+    mutateExisting:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE']
+        resources: ['secrets']
+        resourceNames: ['trigger-secret']
+  targetMatchConstraints:
+    expression: resource.get("v1", "configmaps", object.metadata.namespace, "test-cm-1")
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                mentorship: "kyverno"
+              }
+            }
+          }
+```
+
+`targetMatchConstraints.expression`에서는 트리거 요청으로 계산한 `variables`도 참조할 수 있습니다. 그래서 트리거에 따라 어떤 리소스가 대상이 될지 결정할 수 있습니다.
+
+### 평가 순서
+
+기존 리소스를 변경할 때 정책은 두 단계로 평가됩니다.
+
+**트리거 단계** (정책을 트리거한 리소스를 대상으로 실행):
+
+1. 트리거를 `matchConstraints`에 매칭합니다.
+2. 지연 평가(lazy) `variables` 바인딩을 만듭니다. 변수는 미리 컴파일되고, `request.object`, `request.oldObject` 같은 트리거 컨텍스트를 읽으며, 컨텍스트 라이브러리 조회를 수행할 수도 있습니다. 각 변수는 처음 참조될 때 한 번만 평가되며, 참조될 때만 평가됩니다.
+3. `matchConditions`를 트리거 요청에 대해 평가합니다. 조건은 `variables`를 참조할 수 있고, 변수는 처음 참조될 때 평가됩니다.
+4. 트리거 컨텍스트와 변수를 사용해 `targetMatchConstraints`를 해석합니다.
+
+**대상 단계** (해석된 대상마다 한 번씩 실행):
+
+5. `targetMatchConstraints`가 정의되어 있으면 해석된 각 대상을 리소스 규칙에 매칭합니다.
+6. `targetMatchConditions`를 대상에 대해 평가합니다. 여기서 `object`는 해석된 대상 리소스를 가리키고, `variables`는 트리거 데이터를 전달하는 통로로 계속 쓸 수 있습니다.
+7. 변경 표현식을 평가합니다. `Object`는 대상을 가리킵니다.
+8. 대상에 선언된 API 경로로 변경을 저장합니다. 서브리소스가 선언되어 있으면 서브리소스를 거칩니다.
+
+:::caution[참고]
+Kubernetes 기본 `MutatingAdmissionPolicy`는 `matchConditions`에서 `variables`를 참조하는 것을 지원하지 않습니다. autogen으로 `MutatingAdmissionPolicy`를 생성하는 정책은 매치 조건에서 변수를 참조하지 마세요.
+:::
+
+### targetMatchConditions로 대상 필터링
+
+`targetMatchConditions` 필드는 변수와 대상 해석이 끝난 뒤 해석된 각 대상 리소스에 대해 평가하는 CEL 조건을 정의합니다. 대상의 상태(`object`)와 트리거 데이터(`variables`를 통해)를 모두 써서 어떤 대상을 변경할지 거를 수 있습니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1beta1
+kind: MutatingPolicy
+metadata:
+  name: filter-targets
+spec:
+  evaluation:
+    mutateExisting:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['apps']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['deployments']
+  variables:
+    - name: triggerTeam
+      expression: request.object.metadata.labels['team']
+  targetMatchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['UPDATE']
+        resources: ['configmaps']
+  targetMatchConditions:
+    - name: same-team
+      expression: object.metadata.?labels['team'].orValue('') == variables.triggerTeam
+  mutations:
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: >
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                reconciled: "true"
+              }
+            }
+          }
+```
+
+이 예시에서는 Deployment 이벤트가 발생하면 `team` 레이블이 트리거와 같은 기존 ConfigMap만 변경합니다. 조건을 통과하지 못한 대상은 오류 없이 건너뜁니다.
+
+### 서브리소스 변경
+
+대상 리소스 규칙에 서브리소스를 선언할 수 있습니다. Kyverno는 부모 리소스를 통해 대상을 해석하고, 선언된 서브리소스 엔드포인트로 변경을 저장합니다. 이를 이용하면 `pods/resize` 서브리소스(Kubernetes 1.33 이상)로 파드를 제자리에서 수직 확장하는 작업도 할 수 있습니다. 실행 중인 파드의 `spec.containers[*].resources`는 `/resize`로만 바꿀 수 있기 때문입니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1beta1
+kind: MutatingPolicy
+metadata:
+  name: cap-cpu-requests
+spec:
+  evaluation:
+    admission:
+      enabled: false
+    mutateExisting:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['CREATE', 'UPDATE']
+        resources: ['pods']
+  variables:
+    - name: targetNamespace
+      expression: request.namespace
+    - name: targetName
+      expression: request.name
+  targetMatchConstraints:
+    expression: resource.get("v1", "pods", variables.targetNamespace, variables.targetName)
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        operations: ['UPDATE']
+        resources: ['pods/resize']
+  targetMatchConditions:
+    - name: exceeds-cpu-cap
+      expression: >-
+        object.spec.containers.exists(c,
+          quantity(c.resources.?requests['cpu'].orValue('0')).compareTo(quantity('500m')) > 0)
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: |-
+          [
+            JSONPatch{
+              op: "replace",
+              path: "/spec/containers/0/resources/requests/cpu",
+              value: "500m"
+            }
+          ]
+```
+
+이 정책이 기존 파드를 처리할 때는 해석된 파드를 부모 엔드포인트로 읽고, CPU 요청 변경은 `pods/resize`로 씁니다. 실행 중인 파드의 리소스를 바꾸려면 Kubernetes가 이 경로를 요구하기 때문입니다.
+
+:::caution[참고]
+백그라운드 컨트롤러에 선언한 서브리소스에 대한 RBAC 권한(예: `pods/resize`에 대한 `update`)이 필요합니다. [권한 사용자 정의](/docs/installation/customization#customizing-permissions)를 참고하세요.
+:::
+
+## 변경 순서
+
+변경을 여러 개 적용할 때는 순서가 중요합니다. Kyverno는 정책에 적힌 순서대로 변경을 처리합니다. 하지만 **여러 MutatingPolicy 사이의 순서는 보장되지 않습니다.** 같은 리소스에 정책이 여러 개 적용되면 실행 순서가 정해져 있지 않습니다.
+
+### 순차적 변경
+
+같은 정책 안에 변경을 여러 개 정의하면 순서대로 처리됩니다. 앞선 변경의 결과에 의존하는 변경도 만들 수 있습니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: simple-database-policy
+spec:
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE']
+  mutations:
+    # 첫 번째 변경
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: |
+          object.spec.containers.exists(c, c.image.contains("cassandra") || c.image.contains("mongo")) ?
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                type: "database"
+              }
+            }
+          } : Object{}
+
+    # 두 번째 변경
+    - patchType: ApplyConfiguration
+      applyConfiguration:
+        expression: |
+          object.metadata.labels.type == "database" ?
+          Object{
+            metadata: Object.metadata{
+              labels: Object.metadata.labels{
+                backup: "yes"
+              }
+            }
+          } : Object{}
+```
+
+이 예시의 동작은 다음과 같습니다.
+
+1. **첫 번째 변경**: 컨테이너 중 cassandra나 mongo 이미지를 쓰는 것이 있는지 확인하고 `type: database` 레이블을 추가합니다.
+2. **두 번째 변경**: `type: database` 레이블이 있는지 확인한 뒤 `backup: yes`를 추가합니다.
+
+결과를 일관되게 유지하려면 같은 정책 안에서 변경을 의존 관계 순서대로 위에서 아래로 배치해야 합니다.
+
+### 재호출 정책
+
+`reinvocationPolicy`는 앞선 변경이 객체를 수정했을 때 변경을 다시 적용할지 정합니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: reinvocation-example
+spec:
+  reinvocationPolicy: IfNeeded
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ['']
+        apiVersions: ['v1']
+        resources: ['pods']
+        operations: ['CREATE']
+mutations:
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: |
+        Object{
+            metadata: Object.metadata{
+          labels: {"stage": "initial"}
+            }
+        }
+```
+
+**재호출 정책 옵션:**
+
+- **`Never`**: 바인딩마다 변경을 한 번만 적용합니다(기본값).
+- **`IfNeeded`**: 앞선 변경이 객체를 수정했다면 다시 적용합니다.
+
+## JSON 페이로드
+
+MutatingPolicy는 Kubernetes 리소스뿐 아니라 JSON 객체도 변경할 수 있습니다. `spec.evaluation.mode`를 `JSON`으로 설정하고 `JSONPatch` 변경으로 설정 파일, Terraform 플랜, API 페이로드 같은 JSON 데이터를 수정합니다. JSON 페이로드를 평가할 때 입력 문서와 변경 결과는 루트가 객체여야 합니다. 그 객체 안에는 어떤 타입의 JSON 값이든 중첩할 수 있지만, 최상위가 배열, 스칼라, `null`인 문서는 지원하지 않습니다.
+
+다음은 문서에 기본 리전을 추가하고, `owner/team` 키가 없으면 태그를 다는 정책 예시입니다.
+
+```yaml
+apiVersion: policies.kyverno.io/v1
+kind: MutatingPolicy
+metadata:
+  name: add-defaults
+spec:
+  evaluation:
+    mode: JSON
+  mutations:
+    - patchType: JSONPatch
+      jsonPatch:
+        expression: |
+          ("region" in object ? [] : [
+            JSONPatch{op: "add", path: "/region", value: "west"}
+          ]) + ("owner/team" in object ? [] : [
+            JSONPatch{op: "add", path: "/" + jsonpatch.escapeKey("owner/team"), value: "platform"}
+          ])
+```
+
+JSON 페이로드용 정책은 다음 순서로 작성합니다.
+
+1. `spec.evaluation.mode`를 `JSON`으로 설정합니다.
+2. 필요하면 `spec.matchConditions`에 CEL 표현식을 정의해 변경할 입력을 고릅니다.
+3. `patchType: JSONPatch`를 사용해 `spec.mutations`에 변경을 정의합니다.
+
+매칭 요구 사항은 평가 경로에 따라 다릅니다.
+
+| 평가 경로                                      | `spec.matchConstraints`              | `spec.matchConditions`            |
+| ---------------------------------------------- | ------------------------------------ | --------------------------------- |
+| CLI JSON 페이로드(`--json` 또는 `jsonPayloads`) | 필요 없음                            | 선택. 페이로드를 거릅니다         |
+| CLI Kubernetes 리소스(`--resource`)            | 리소스를 고르려면 필요               | 선택. 매칭 결과를 더 거릅니다     |
+| 클러스터 내 어드미션                           | 일반적인 정책 어드미션에는 필요      | 선택. 매칭 결과를 더 거릅니다     |
+
+### JSON 변경 평가
+
+JSON 변경은 [Kyverno CLI](/docs/subprojects/kyverno-cli)로 적용합니다.
+
+```sh
+kyverno apply policy.yaml --json input.json
+```
+
+변경된 객체는 기존 YAML 변경 출력 형식으로 표준 출력에 나옵니다. 파일로 쓰려면 `--output-file`을, `<policy-name>-mutated.yaml`에 YAML 문서를 추가하려면 `--output-dir`을 사용하세요. 출력은 일반적인 변경 규칙을 따르며, 여러 입력에 걸친 일괄 출력 트랜잭션은 없습니다.
+
+`--json`을 변경 정책과 검증 정책에 함께 쓰면 JSON 모드 변경이 정책 순서대로 먼저 실행되고, 그다음 변경된 객체에 검증이 실행됩니다. 이미지 검증 정책과 삭제 정책도 갱신된 객체를 받습니다. JSON 모드 ValidatingPolicy와 마찬가지로 JSON 모드 MutatingPolicy도 CLI에서 Kubernetes 리소스 입력에 대해 평가할 수 있습니다.
+
+`jsonPayloads`와 `patchedResources`를 쓰면 `kyverno test`로도 변경을 검증할 수 있습니다.
+
+```yaml
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: add-defaults
+policies:
+  - policy.yaml
+jsonPayloads:
+  - input.json
+results:
+  - isMutatingPolicy: true
+    policy: add-defaults
+    resources:
+      - input.json
+    patchedResources: expected.json
+    result: pass
+```
+
+테스트에서 `resources` 항목은 `jsonPayloads`에 나열한 경로와 정확히 같아야 합니다.
+
+### 동작과 제약 사항
+
+- **사용 가능한 변수**: CEL 표현식에서 `object`(현재 문서), `variables`, `exceptions`를 쓸 수 있고, `JSONPatch` 값을 만들거나 `jsonpatch.escapeKey`를 호출할 수 있습니다. `request`, `oldObject`, `namespaceObject`, `http`, `resource`, `globalContext`, `image`처럼 어드미션이나 클러스터에 의존하는 변수와 라이브러리는 쓸 수 없습니다.
+- **패치 의미론**: 패치는 [RFC 6902](https://www.rfc-editor.org/rfc/rfc6902)를 따릅니다. `path: ""`로 객체 전체를 교체할 수는 있지만 제거할 수는 없고, 모든 변경은 루트가 객체인 결과를 만들어야 합니다. `test` 연산이 실패하면 그 정책의 패치가 모두 롤백되고 정책은 건너뛴 것으로 보고됩니다.
+- **숫자**: JSON 페이로드 경로는 부호 있는 int64 정수를 2<sup>53</sup>보다 큰 값까지 정확히 보존합니다. 부호 있는 int64 범위를 벗어난 정수 리터럴은 오류가 납니다. 소수와 지수 형태의 숫자는 IEEE-754 배정밀도를 사용하며, 패치 `test`는 인접한 큰 정수를 같은 값으로 취급하지 않고 비교합니다.
+- **순서와 결과**: 정책은 순서대로 적용되며 각 정책은 이전 정책의 출력을 입력으로 받습니다. 정책 하나라도 오류가 나면 변경된 문서가 만들어지지 않습니다.
+- **제한**: JSON 페이로드 문서는 최대 1 MiB이고, `JSONPatch` 변경 표현식 하나가 만들 수 있는 패치 연산은 최대 1024개입니다.
+- **지원하지 않는 설정**: `ApplyConfiguration` 패치, `mutateExisting`, `targetMatchConstraints`, `targetMatchConditions`, `Never`가 아닌 `reinvocationPolicy`, 파드 컨트롤러 autogen, MutatingAdmissionPolicy 생성은 JSON 모드에서 거부됩니다. JSON 모드는 `JSONPatch` 변경이 필요하므로 `useServerSideApply`를 사용하지 않습니다.
+- **클러스터 내 수명 주기**: JSON 모드 MutatingPolicy는 JSON 모드 ValidatingPolicy와 같은 수명 주기를 따릅니다. JSON 모드가 정책 저장, 프로바이더, 웹훅, 리포팅, 일반적인 리소스 매칭을 따로 끄지는 않습니다. 클러스터에 제출하는 정책에도 일반적인 `matchConstraints`가 필요하며, 어드미션은 매칭된 리소스 객체에 대해 JSON 표현식을 평가합니다.
+- **예외**: [PolicyException](/docs/guides/exceptions)은 `matchConditions`를 사용해 JSON 모드 정책에서 문서를 제외할 수 있습니다.
+
+이 제한과 지원 설정은 현재 구현을 반영한 것입니다. [JSON 패처](https://github.com/kyverno/kyverno/blob/main/pkg/cel/policies/mpol/compiler/json.go), [JSON 정책 검증](https://github.com/kyverno/kyverno/blob/main/pkg/cel/policies/mpol/compiler/json_policy.go), [CLI 리소스 매칭](https://github.com/kyverno/kyverno/blob/main/cmd/cli/kubectl-kyverno/commands/apply/command.go)을 참고하세요.
+
+## GitOps 고려 사항
+
+GitOps는 설정을 관리하는 데 뛰어나지만, 레이블 전파 같은 일부 변경은 변경 정책으로 처리하는 편이 낫습니다.
+
+Kyverno의 MutatingPolicy는 GitOps 솔루션과 잘 어울리도록 설계되었습니다.
+
+변경은 Git에 저장된 상태에서 리소스를 바꿉니다. GitOps 컨트롤러가 그 변경을 인식하도록 설정해야 변경을 반복해서 되돌리거나 같은 리소스를 계속 재조정하지 않습니다.
+
+### Flux
+
+[Flux](https://fluxcd.io/)는 서버 사이드 어플라이와 드라이 런 요청으로 차이를 계산합니다. Kyverno는 드라이 런 중에도 변경 웹훅을 처리하므로 Flux는 변경이 반영된 원하는 상태와 비교할 수 있습니다. 보통 별도 설정이 필요 없습니다.
+
+드라이 런에도 정책 평가가 필요합니다. Flux 동기화 주기와 그에 따라 늘어나는 어드미션 부하 사이에서 균형을 잡으세요.
+
+### ArgoCD
+
+Argo CD v2.10 이상에서는 서버 사이드 diff(Server-Side Diff)를 사용하고 비교에 변경 웹훅을 포함하세요.
+
+```yaml
+metadata:
+  annotations:
+    argocd.argoproj.io/compare-options: ServerSideDiff=true,IncludeMutationWebhook=true
+```
+
+[ArgoCD 사용자를 위한 참고 사항](/docs/installation/platform-notes#notes-for-argocd-users)과 [Argo CD diff 문서](https://argo-cd.readthedocs.io/en/stable/user-guide/diff-strategies/)를 참고하세요.
+
+서버 사이드 diff를 쓸 수 없다면 Kyverno가 관리하는 필드에 대해 Application의 `ignoreDifferences`를 설정하세요. 예를 들어 Deployment에 추가된 레이블을 무시하려면 다음과 같이 합니다.
+
+```yaml
+spec:
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jqPathExpressions:
+        - .metadata.labels.foo
+```
+
+관련 없는 설정 드리프트가 계속 보이도록 제외 범위는 좁게 유지하세요.
