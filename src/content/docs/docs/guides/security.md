@@ -22,7 +22,7 @@ Kyverno는 어드미션 컨트롤러로 동작하며 Kubernetes 컨트롤 플레
 
 보안 대응팀이 조사하고 수정과 공개를 조율하는 동안에는 취약점 세부 정보를 비공개로 유지해 주세요. 잠재적 취약점을 공개 GitHub 이슈, 풀 리퀘스트, Slack 채널에 보고하지 마세요.
 
-보안 메일링 리스트는 더 이상 취약점 보고에 쓰지 않습니다. 이전에 이메일로 보고했지만 해결되지 않은 문제가 있다면, GitHub에 비공개 취약점 보고를 새로 제출하고 관련 세부 정보와 이전 대화 내용을 포함해 그곳에서 논의를 이어 가십시오.
+보안 메일링 리스트는 더 이상 취약점 보고에 쓰지 않습니다. 이전에 이메일로 보고했지만 해결되지 않은 문제가 있다면, GitHub에 비공개 취약점 보고를 새로 제출하고 관련 세부 정보와 이전 대화 내용을 포함해 그곳에서 논의를 이어 가세요.
 
 Kyverno 보안 대응팀은 영업일 기준 3~5일 안에 공개 접수 확인을 보냅니다. 취약점과 완화 방법이 확인되면, 팀은 심각도와 복잡도에 따라 필요한 변경 사항을 릴리스할 계획을 세웁니다. 보안 정책과 프로세스의 자세한 내용은 Kyverno [git 저장소](https://github.com/kyverno/kyverno/blob/main/SECURITY.md)에서 볼 수 있습니다.
 
@@ -83,7 +83,7 @@ Kyverno 컨테이너 이미지는 [여기](https://github.com/orgs/kyverno/packa
 
 ## Kyverno 컨테이너 이미지, 설치 매니페스트, Helm 차트 검증
 
-Kyverno 컨테이너 이미지와 매니페스트는 Cosign의 [키 없는 서명(keyless signing) 기능](https://docs.sigstore.dev/cosign/verifying/verify/)으로 서명됩니다. 서명은 참조하는 컨테이너 이미지와 별도의 저장소인 `ghcr.io/kyverno/signatures`에 저장됩니다. Cosign v1.x로 컨테이너 이미지와 매니페스트를 검증하려면 다음 단계를 따르십시오.
+Kyverno 컨테이너 이미지와 매니페스트는 Cosign의 [키 없는 서명(keyless signing) 기능](https://docs.sigstore.dev/cosign/verifying/verify/)으로 서명됩니다. 서명은 참조하는 컨테이너 이미지와 별도의 저장소인 `ghcr.io/kyverno/signatures`에 저장됩니다. Cosign v1.x로 컨테이너 이미지와 매니페스트를 검증하려면 다음 단계를 따르세요.
 
 1. [Cosign](https://github.com/sigstore/cosign#installation)을 설치합니다.
 
@@ -348,7 +348,7 @@ NetworkPolicy는 클러스터의 CNI 플러그인이 지원할 때만 적용됩�
 - [이미지 검증](/docs/policy-types/image-validating-policy)과 [이미지 메타데이터 조회](/docs/policy-types/cel-libraries#image-library)를 위한 **OCI 레지스트리**
 - [글로벌 컨텍스트 소스](/docs/policy-types/global-context-caching)와 [CEL HTTP 라이브러리](/docs/policy-types/cel-libraries#http-library)를 위한 **외부 HTTPS 엔드포인트**. 둘 중 하나라도 일반 HTTP를 쓴다면 아래 이그레스 정책에 80 포트 규칙을 추가하세요.
 
-샘플은 기본 설치의 레이블을 사용하며, 이때 `app.kubernetes.io/instance`와 `app.kubernetes.io/part-of`는 모두 `kyverno`입니다. 다른 릴리스 이름을 썼다면 이 값이 다릅니다. 적용하기 전에 파드의 실제 레이블을 확인해 매니페스트에 그대로 옮기십시오.
+샘플은 기본 설치의 레이블을 사용하며, 이때 `app.kubernetes.io/instance`와 `app.kubernetes.io/part-of`는 모두 `kyverno`입니다. 다른 릴리스 이름을 썼다면 이 값이 다릅니다. 적용하기 전에 파드의 실제 레이블을 확인해 매니페스트에 그대로 옮기세요.
 
 ```sh
 kubectl get pods -n kyverno --show-labels
@@ -509,7 +509,7 @@ kubectl rollout status deployment -l app.kubernetes.io/part-of=kyverno -n kyvern
 kubectl get pods -n kyverno
 ```
 
-컨트롤러 로그에서 Kubernetes API 연결 실패, list/watch 오류, DNS 실패, 요청 타임아웃이 있는지 살펴보십시오.
+컨트롤러 로그에서 Kubernetes API 연결 실패, list/watch 오류, DNS 실패, 요청 타임아웃이 있는지 살펴보세요.
 
 ```sh
 kubectl logs -n kyverno \
@@ -523,7 +523,7 @@ kubectl logs -n kyverno \
 
 ##### Helm 차트 사용
 
-Helm 차트는 컨트롤러별 `networkPolicy.enabled`로 인그레스 정책 네 개를 생성할 수 있습니다([차트 `values.yaml`](https://github.com/kyverno/kyverno/blob/main/charts/kyverno/values.yaml) 참고). 이그레스 규칙은 생성하지 않으므로 위의 `kyverno-egress`를 차트와 함께 적용하고, 충돌을 피하기 위해 인그레스 샘플은 건너뛰십시오.
+Helm 차트는 컨트롤러별 `networkPolicy.enabled`로 인그레스 정책 네 개를 생성할 수 있습니다([차트 `values.yaml`](https://github.com/kyverno/kyverno/blob/main/charts/kyverno/values.yaml) 참고). 이그레스 규칙은 생성하지 않으므로 위의 `kyverno-egress`를 차트와 함께 적용하고, 충돌을 피하기 위해 인그레스 샘플은 건너뛰세요.
 
 ##### 심층 방어
 
